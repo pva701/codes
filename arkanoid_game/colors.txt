@@ -1,0 +1,61 @@
+фиолетовый    
+	gr.setColorAt(0.5, QColor("#AE40C4"));
+    gr.setColorAt(1, QColor("#3E0849"));
+
+красный
+	gr.setColorAt(0.2, QColor("#FF005A"));
+    gr.setColorAt(1, QColor("#C62B62"));
+	
+    gr.setColorAt(0.2, QColor("#F62828"));
+    gr.setColorAt(1, QColor("#9B1111"));
+	
+    gr.setColorAt(0.4, QColor("#CE4A56"));
+    gr.setColorAt(1, QColor("#5F181F"));
+зеленый
+    gr.setColorAt(0.4, QColor("#00E82D"));
+    gr.setColorAt(1, QColor("#247412"));
+
+желтый
+    gr.setColorAt(0.4, QColor("#EDE742"));
+    gr.setColorAt(1, QColor("#84801B"));
+	
+    gr.setColorAt(0.4, QColor("#EDE742"));
+    gr.setColorAt(1, QColor("#53531F"));
+
+	gr.setColorAt(0.4, QColor("#EDE742"));
+    gr.setColorAt(1, QColor("#7E7E1A"));
+	
+
+розовый, близкий к фиолетовому
+    gr.setColorAt(0.4, QColor("#D43AC7"));
+    gr.setColorAt(1, QColor("#682062"));
+
+синий
+    gr.setColorAt(0.4, QColor("#5E53E9"));
+    gr.setColorAt(1, QColor("#141238"));
+int StartX = 100;
+int StartY = 100;
+int XLeng = 60;
+int YLeng = 30;
+QRect block(StartX, StartY, XLeng, YLeng);
+//QLinearGradient gr(100, 10, 50, 0);
+QLinearGradient gr(StartX + XLeng / 2, StartY, StartX + XLeng / 2, StartY + YLeng);
+gr.setColorAt(0.4, QColor("#FF005A"));
+gr.setColorAt(1, QColor("#D02B65"));
+
+
+QPainter paint1(this);
+paint1.setRenderHint(QPainter::Antialiasing);
+paint1.setBrush(gr);
+QPen myPen(gr, 10, Qt::SolidLine);
+myPen.setJoinStyle(Qt::RoundJoin);
+paint1.setPen(myPen);
+
+//paint1.setBrush(QBrush(Qt::red, Qt::SolidPattern));
+//paint1.setBrush(QBrush(Qt::black, QPixmap(":/meteorit2.jpg")));
+//paint1.setPen(QPen(Qt::red, 3, Qt::DashLine));
+//paint1.drawEllipse(x, y, 30, 30);
+//paint1.drawRect(QRect(100, 100, 300, 300));
+//paint1.drawLine(0, 0, width(), height());
+paint1.drawRect(block);
+paint1.end();
