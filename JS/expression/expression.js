@@ -12,7 +12,7 @@ function variable(name) {
 }
 
 function binaryOperation(op) {
-    return function(f, g) {
+    return function(f,g) {
             return function(x) {
                 return op(f(x), g(x));
             }
@@ -29,32 +29,31 @@ var subtract = binaryOperation(opSub);
 var multiply = binaryOperation(opMul);
 var divide = binaryOperation(opDiv);
 
-for (var i = 0; i <= 10; i++) {
+for (var i = 0; i <= 10; ++i) {
     var expr = add(subtract(multiply(variable("x"), variable("x")), multiply(cnst(2), variable("x"))), cnst(1));
     println(expr(i));
 }
 
-
 function parse(s) {
     stk = [];
     for (var i = 0; i < s.length; i++) {
-        switch(s[i]) {
+        switch (s[i]) {
             case "x":
-               stk.push(variable("x"));
-               break;
+                stk.push(variable("x"));
+                break;
             case "+":
                 stk.push(add(stk.pop(), stk.pop()));
                 break;
             case "-":
-                var arg1 = stk.pop();
-                stk.push(subtract(stk.pop(), arg1));
+                var arg = stk.pop();
+                stk.push(subtract(stk.pop(), arg));
                 break;
             case "*":
                 stk.push(multiply(stk.pop(), stk.pop()));
                 break;
             case "/":
-                var arg1 = stk.pop();
-                stk.push(divide(stk.pop(), arg1));
+                var arg = stk.pop();
+                stk.push(divide(stk.pop(), arg));
                 break;
             default:
                 stk.push(cnst(Number(s[i])));
@@ -62,5 +61,5 @@ function parse(s) {
     }
     return stk.pop();
 }
+println(parse("xx2-*x*1+")(5));
 
-println(parse("xx23+*-")(5))
