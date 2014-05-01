@@ -1,9 +1,19 @@
 #include "big_integer.h"
 #include "tester.h"
 #include <iostream>
+#include <cstdio>
 using namespace std;
 
 int main(int argc, char *argv[]) {
+    big_integer d;
+    cout << to_string(d--) << endl;
+    cout << to_string(--d) << endl;
+    cout << to_string(++d) << endl;
+    cout << to_string(d++) << endl;
+    //cout << (x | y) << endl;
+    //cout << to_string(big_integer(x) | big_integer(y)) << endl;
+    //Tester::testOrAndXor();
+    //Tester::testBitShift();
 //    Tester::testStringConstructorAndToString();
 //    Tester::testCompare();
     //big_integer c = 5;
@@ -19,10 +29,10 @@ int main(int argc, char *argv[]) {
     cout << "t = " << to_string(t) << endl;
     cout << "to str = " << to_string(a) << endl;
     cout << "to str = " << to_string(c) << endl;*/
-    big_integer s1("1111111111111111111111111111111111");
-    big_integer s2(2);
-    s1 /= s2;
-    cout << to_string(s1) << endl;
+    //big_integer s1("111111111111111");
+    //cout << 10 * 200000 % 12 * 1000 % 12 * 10000001 % 12 << endl;
+    //cout << to_string((big_integer(10) * 200000 * big_integer(1000) * big_integer(10000001)) % 12) << endl;
+    //cout << to_string(+big_integer("0000111")) << endl;
     //a = (b + c) + (a + c);
     /*big_integer a("10");
     cout << to_string(a) << endl;

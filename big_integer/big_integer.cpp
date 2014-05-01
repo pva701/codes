@@ -3,9 +3,7 @@
 #include <cstdio>
 using namespace std;
 
-typedef big_integer const T;
-
-int big_integer::cmpr(T &b) const {
+int big_integer::cmpr(const big_integer &b) const {
     int sign1 = sign;
     int sign2 = b.sign;
 
@@ -34,7 +32,18 @@ unsigned short big_integer::divShort(unsigned short b) {//only positive or nough
     }
     while (digits.size() > 1 && digits.back() == 0)
         digits.pop_back();
+    if (digits.size() == 1 && digits.back() == 0)
+        sign = 0;
     return carry;
+}
+
+void big_integer::inverse(int lenbit = -1) {
+    additionalCode();
+    if (lenbit != -1)
+        while (digits.size() < lenbit)
+            digits.push_back(0);
+    for (int i = 0; i < digits.size(); ++i)
+        digits[i] = ~digits[i];
 }
 
 big_integer big_integer::divLong(const big_integer& value, big_integer& remainder) {
@@ -79,13 +88,54 @@ big_integer big_integer::divLong(const big_integer& value, big_integer& remainde
     return c;
 }
 
+
+void big_integer::additionalCode() {
+    sign *= -1;
+    *this -= 1;
+}
+
+int big_integer::myOr(int x, int y) {return x | y;}
+int big_integer::myAnd(int x, int y) {return x & y;}
+int big_integer::myXor(int x, int y) {return x ^ y;}
+big_integer& big_integer::executeBit(big_integer curb, int (*f)(int, int)) {
+   big_integer cura = *this;
+   big_integer res;
+   res.digits.pop_back();
+   res.digits.resize(max(digits.size(), curb.digits.size()));
+   bool neg1 = sign < 0;
+   bool neg2 = curb.sign < 0;
+   while (cura.digits.size() < res.digits.size()) cura.digits.push_back(0);
+   while (curb.digits.size() < res.digits.size()) curb.digits.push_back(0);
+
+   if (neg1)
+       cura.inverse(res.digits.size());
+   if (neg2)
+       curb.inverse(res.digits.size());
+
+   for (int i = 0; i < res.digits.size(); ++i)
+       res.digits[i] = f(cura.digits[i], curb.digits[i]);
+
+   if (f(neg1, neg2)) res.sign = -1;
+   else res.sign = 1;
+   int sv = res.sign;
+   if (res.sign < 0)
+       res.inverse();
+   res.sign = sv;
+   while (res.digits.size() > 1 && res.digits.back() == 0)
+       res.digits.pop_back();
+   if (res.digits.size() == 1 && res.digits.back() == 0)
+       res.sign = 0;
+   return *this = res;
+}
+
+//public
 big_integer::big_integer() {
     sign = 0;
     digits.push_back(0);
 }
 
 //copy
-big_integer::big_integer(T& value)  {
+big_integer::big_integer(const big_integer& value)  {
     sign = value.sign;
     digits = value.digits;
 }
@@ -132,7 +182,7 @@ big_integer::big_integer(int x) {
 }
 
 //assign
-big_integer& big_integer::operator = (T& value) {
+big_integer& big_integer::operator = (const big_integer& value) {
     digits = value.digits;
     sign = value.sign;
     return *this;
@@ -140,17 +190,18 @@ big_integer& big_integer::operator = (T& value) {
 
 //binary operations
 
-big_integer& big_integer::operator += (T& value) {
+big_integer& big_integer::operator += (const big_integer& value) {
     int sign1 = sign;
     int sign2 = value.sign;
     big_integer x = *this;
     big_integer y = value;
+
     if (sign1 >= 0 && sign2 >= 0) {
         bool carry = 0;
         for (size_t i=0; i < max(x.digits.size(), y.digits.size()) || carry; ++i) {
             if (i == x.digits.size())
                 x.digits.push_back(0);
-            unsigned int cur = (unsigned int)x.digits[i] + carry + (i < x.digits.size() ? y.digits[i] : 0);
+            unsigned int cur = (unsigned int)x.digits[i] + carry + (i < y.digits.size() ? y.digits[i] : 0);
             carry = (unsigned short)(cur >> CNT_BIT_OF_BASE);
             x.digits[i] = (unsigned short)cur;
         }
@@ -159,7 +210,8 @@ big_integer& big_integer::operator += (T& value) {
     }  else if (sign1 <= 0 && sign2 <= 0) {
         x.sign *= -1;
         y.sign *= -1;
-        *this = x + y;
+        x += y;
+        *this = x;
         this->sign = -1;
     } else if (sign1 < 0 && sign2 > 0) {
         x.sign *= -1;
@@ -181,12 +233,13 @@ big_integer& big_integer::operator += (T& value) {
     return *this;
 }
 
-big_integer& big_integer::operator -= (T& value) {
+big_integer& big_integer::operator -= (const big_integer& value) {
     big_integer x = *this;
     big_integer y = value;
     int sign1 = x.sign;
     int sign2 = y.sign;
     int resCmpr = x.cmpr(y);
+
     if (sign1 >= 0 && sign2 >= 0 && resCmpr >= 0) {
         bool carry = 0;
         for (size_t i=0; i<y.digits.size() || carry; ++i) {
@@ -207,7 +260,7 @@ big_integer& big_integer::operator -= (T& value) {
     return *this;
 }
 
-big_integer& big_integer::operator *= (T& value) {
+big_integer& big_integer::operator *= (const big_integer& value) {
     big_integer c;
     c.digits.resize(digits.size() + value.digits.size());
     for (size_t i=0; i<digits.size(); ++i) {
@@ -224,32 +277,77 @@ big_integer& big_integer::operator *= (T& value) {
     return *this = c;
 }
 
-big_integer& big_integer::operator /= (T& value) {
+big_integer& big_integer::operator /= (const big_integer& value) {
     big_integer rem;
     big_integer res = this->divLong(value, rem);
     return *this = res;
 }
 
-big_integer operator + (big_integer a, T& b) {
+big_integer& big_integer::operator %= (const big_integer& value) {
+    big_integer rem;
+    this->divLong(value, rem);
+    return *this = rem;
+}
+
+big_integer operator + (big_integer a, const big_integer& b) {
     a += b;
     return a;
 }
 
-big_integer operator - (big_integer a, T& b) {
+big_integer operator - (big_integer a, const big_integer& b) {
     a -= b;
     return a;
 }
 
-big_integer operator * (big_integer a, T& b) {
+big_integer operator * (big_integer a, const big_integer& b) {
     a *= b;
     return a;
 }
 
-big_integer operator / (big_integer a, T& b) {
+big_integer operator / (big_integer a, const big_integer& b) {
     a /= b;
     return a;
 }
 
+big_integer operator % (big_integer a, const big_integer& b) {
+    a %= b;
+    return a;
+}
+
+//unary operation
+big_integer big_integer::operator -() const {
+    big_integer b = *this;
+    b.sign *= -1;
+    return b;
+}
+
+big_integer big_integer::operator +() const {
+    return *this;
+}
+
+big_integer& big_integer::operator++() {
+    *this += 1;
+    return *this;
+}
+
+big_integer big_integer::operator++(int) {
+    big_integer b = *this;
+    *this += 1;
+    return b;
+}
+
+big_integer& big_integer::operator--() {
+    *this -= 1;
+    return *this;
+}
+
+big_integer big_integer::operator--(int) {
+    big_integer b = *this;
+    *this -= 1;
+    return b;
+}
+
+//compare
 bool operator < (const big_integer& a, const big_integer& b) {
     return a.cmpr(b) < 0;
 }
@@ -274,12 +372,63 @@ bool operator != (const big_integer& a, const big_integer& b) {
     return a.cmpr(b) != 0;
 }
 
-//unary operation
-big_integer big_integer::operator -() const {}
-big_integer big_integer::operator +() const {}
-
 //bit operation
+big_integer& big_integer::operator |= (const big_integer& value) {
+    return executeBit(value, myOr);
+
+}
+
+big_integer& big_integer::operator &= (const big_integer& value) {
+    return executeBit(value, myAnd);
+}
+
+big_integer& big_integer::operator ^= (const big_integer& value) {
+    return executeBit(value, myXor);
+}
+
+big_integer operator | (big_integer a, const big_integer& b) {
+    return a |= b;
+}
+
+big_integer operator & (big_integer a, const big_integer& b) {
+    return a &= b;
+}
+
+big_integer operator ^ (big_integer a, const big_integer& b) {
+    return a ^= b;
+}
+
 big_integer& big_integer::operator >>=(int b) {
+    if (sign >= 0)
+        for (int i = 1; i <= b; ++i)
+            divShort(2);
+    else {
+        this->additionalCode();
+        *this >>= b;
+        this->additionalCode();
+    }
+    return *this;
+}
+
+big_integer& big_integer::operator <<=(int b) {
+    for (int i = 1; i <= b; ++i)
+        *this *= 2;
+    return *this;
+}
+
+big_integer operator <<(big_integer a, int b) {
+    a <<= b;
+    return a;
+}
+
+big_integer operator >>(big_integer a, int b) {
+    a >>= b;
+    return a;
+}
+
+
+big_integer big_integer::operator ~() const {
+    return -(*this + 1);
 }
 
 std::string to_string(const big_integer& a) {

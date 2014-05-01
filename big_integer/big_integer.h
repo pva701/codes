@@ -8,7 +8,7 @@ using namespace std;
 struct big_integer;
 
 struct big_integer {
-public:
+private:
     static const int CNT_BIT_OF_BASE = 16;
     static const int BASE = 1<<CNT_BIT_OF_BASE;
     vector <unsigned short> digits;
@@ -16,6 +16,12 @@ public:
     int cmpr(const big_integer& b) const;
     unsigned short divShort(unsigned short b);
     big_integer divLong(const big_integer& value, big_integer& remainder);
+    void additionalCode();
+    void inverse(int lenbit);
+    big_integer& executeBit(big_integer b, int (*f)(int, int));
+    static int myOr(int x, int y);
+    static int myAnd(int x, int y);
+    static int myXor(int x, int y);
 /*
   a.back() < 0 - negative
   a.back() > 0 - positive
@@ -41,6 +47,9 @@ public:
     big_integer& operator /= (const big_integer& value);
     big_integer& operator %= (const big_integer& value);
 
+    big_integer& operator |= (const big_integer& value);
+    big_integer& operator &= (const big_integer& value);
+    big_integer& operator ^= (const big_integer& value);
 
     //compare
     friend bool operator < (const big_integer& a, const big_integer& b);
@@ -54,18 +63,32 @@ public:
     big_integer operator -() const;
     big_integer operator +() const;
 
+    big_integer& operator++();
+    big_integer operator++(int);
+
+    big_integer& operator--();
+    big_integer operator--(int);
+
     //bits operations
     big_integer& operator >>=(int b);
     big_integer& operator <<=(int b);
-    friend std::string to_string(const big_integer& a);
+    big_integer operator ~() const;
 
-    //friend Tester::testCompare();
+    friend std::string to_string(const big_integer& a);
 };
+
 //binary operations
 big_integer operator + (big_integer a, const big_integer& b);
 big_integer operator - (big_integer a, const big_integer& b);
 big_integer operator * (big_integer a, const big_integer& b);
 big_integer operator / (big_integer a, const big_integer& b);
+big_integer operator % (big_integer a, const big_integer& b);
+
+big_integer operator | (big_integer a, const big_integer& b);
+big_integer operator & (big_integer a, const big_integer& b);
+big_integer operator ^ (big_integer a, const big_integer& b);
+big_integer operator <<(big_integer a, int b);
+big_integer operator >>(big_integer a, int b);
 
 std::string to_string(const big_integer& a);
 #endif // BIG_INTEGER_H

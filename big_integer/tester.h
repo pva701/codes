@@ -6,6 +6,7 @@
 #include <vector>
 #include <cstdlib>
 #include <ctime>
+#include <cstdio>
 #include "big_integer.h"
 using namespace std;
 
@@ -13,9 +14,6 @@ class Tester {
 private:
     Tester() {}
     static const int ITERATION = 100;
-    int cmpr(string s1, string s2) {
-
-    }
 public:
 //    friend int big_integer::cmpr(const big_integer& a) const;
 
@@ -61,6 +59,55 @@ public:
 
             if ((a != b) != (s1 != s2)) {
                 cout << "surprise mothefucker";
+                return;
+            }
+        }
+    }
+
+    static string toString(long long x) {
+        char ss[30];
+        sprintf(ss, "%ld", x);
+        return string(ss);
+    }
+
+    static void testBitShift() {
+        int BOUND = 1<<18;
+        for (int i = -BOUND; i <= BOUND; ++i) {
+            for (int j = 0; j <= 20; ++j) {
+                big_integer resl(i);
+                if (toString(i>>j) != to_string(resl)) {
+                    cout << toString(i>>j) << " " << to_string(resl) << endl;
+                    cout << "error = " << i << " " << j << endl;
+                    return;
+                }
+            }
+        }
+    }
+
+    static void testOrAndXor() {
+        int BOUND = 1<<20;
+        for (int t = 0; t < BOUND; ++t) {
+            long long i = rand() | (1LL * rand()<<30);
+            long long j = rand() | (1LL * rand()<<30);
+            if (rand()&1) i = -i;
+            if (rand()&1) j = -j;
+            big_integer a(toString(i));
+            big_integer b(toString(j));
+            if (to_string(a | b) != toString(i | j)) {
+                cout << to_string(a | b) << " " << toString(i | j) << endl;
+                cout << "error or " << i << " " << j << endl;
+                return;
+            }
+
+            if (to_string(a & b) != toString(i & j)) {
+                cout << to_string(a & b) << " " << toString(i & j) << endl;
+                cout << "error and " << i << " " << j << endl;
+                return;
+            }
+
+            if (to_string(a ^ b) != toString(i ^ j)) {
+                cout << to_string(a ^ b) << " " << toString(i ^ j) << endl;
+                cout << "error xor " << i << " " << j << endl;
                 return;
             }
         }
