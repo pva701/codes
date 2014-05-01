@@ -1,0 +1,9 @@
+Допустим, в нашем репозитории с проектом Yii/PHP имееются два одинаковых по содержанию, но разных по регистру букв файла:
+/protected/controllers/OrderedflightsController.php
+/protected/controllers/OrderedFlightsController.php
+
+Попали они туда случайно, и остаться должен только один. Хотим удалить файл OrderedFlightsController.php прямо из репозитория. Делаем, находясь в корне проекта:
+git filter-branch --index-filter 'git rm --cached --ignore-unmatch protected/controllers/OrderedFlightsController.php' HEAD
+
+Происходит полная переиндексация проекта с удалением замеченных файлов. После этого обязательно заливаем изменения в репозиторий в редактируемую ветку:
+git push origin remote_delete --force
