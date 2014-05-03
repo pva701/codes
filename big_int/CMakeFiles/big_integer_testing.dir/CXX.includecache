@@ -1,0 +1,28 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/pva701/QtProjects/bigint/big_integer.cpp
+big_integer.h
+/home/pva701/QtProjects/bigint/big_integer.h
+iostream
+-
+cstdio
+-
+cassert
+-
+cstdlib
+-
+
+/home/pva701/QtProjects/bigint/big_integer.h
+vector
+-
+cstring
+-
+string
+-
+

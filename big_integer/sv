@@ -1,0 +1,35 @@
+/*int sign1 = sign;
+    int sign2 = val.sign;
+    if (sign < 0) sign = 1;
+    if (val.sign < 0) val.sign = 1;
+    for (int i = (int)digits.size() - 1; i >= 0; --i) {
+        remainder = remainder.mulShort((unsigned short)(BASE - 1)) + remainder + digits[i];//O(n)
+        int l = 0, r = BASE, mid;
+        while (l + 1 < r) {//bin search by digit, O(1)
+            mid = (l + r) / 2;
+            if (val.mulShort(mid) <= remainder)
+                l = mid;
+            else
+                r = mid;
+        }
+        c.digits.push_back(l);
+        remainder -= l * val;
+    }
+    for (size_t i = 0; 2 * i < c.digits.size(); ++i) {
+        short int tmp = c.digits[i];
+        c.digits[i] = c.digits[c.digits.size() - i - 1];
+        c.digits[c.digits.size() - i - 1] = tmp;
+    }
+    while (c.digits.size() > 1 && c.digits.back() == 0)
+        c.digits.pop_back();
+
+    if (c.digits.back() == 0 && c.digits.size() == 1)
+        c.sign = 0;
+    else
+        c.sign = sign1 * sign2;
+
+    if (remainder.digits.back() == 0 && remainder.digits.size() == 1)
+        remainder.sign = 0;
+    else
+        remainder.sign = sign1;
+    return c;*/

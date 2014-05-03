@@ -1,9 +1,7 @@
 #ifndef BIG_INTEGER_H
 #define BIG_INTEGER_H
 #include <vector>
-#include <cstring>
 #include <string>
-using namespace std;
 
 struct big_integer;
 
@@ -11,10 +9,12 @@ struct big_integer {
 private:
     static const int CNT_BIT_OF_BASE = 16;
     static const int BASE = 1<<CNT_BIT_OF_BASE;
-    vector <unsigned short> digits;
+    std::vector <unsigned short> digits;
     int sign;
+
     int cmpr(const big_integer& b) const;
     unsigned short divShort(unsigned short b);
+    big_integer mulShort(unsigned short b);
     big_integer divLong(const big_integer& value, big_integer& remainder);
     void additionalCode();
     void inverse(int lenbit);
@@ -34,8 +34,6 @@ public:
     big_integer(const big_integer& value);
     explicit big_integer(const std::string& s);
     big_integer(int x);
-    //destructor
-    //~big_integer();//delete[] digits
 
     //assign
     big_integer& operator = (const big_integer& value);

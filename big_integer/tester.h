@@ -8,6 +8,7 @@
 #include <ctime>
 #include <cstdio>
 #include "big_integer.h"
+#include <algorithm>
 using namespace std;
 
 class Tester {
@@ -113,6 +114,53 @@ public:
         }
     }
 
+    static int myrand()
+    {
+        int val = rand() - RAND_MAX / 2;
+        if (val != 0)
+            return val;
+        else
+            return 1;
+    }
+
+    static void testDiv() {
+        unsigned const number_of_iterations = 1;
+        size_t const number_of_multipliers = 1000;
+
+        for (unsigned itn = 0; itn != number_of_iterations; ++itn)
+        {
+            std::vector<int> multipliers;
+
+            for (size_t i = 0; i != number_of_multipliers; ++i)
+                multipliers.push_back(myrand());
+
+            big_integer accumulator = 1;
+
+            for (size_t i = 0; i != number_of_multipliers; ++i)
+                accumulator *= multipliers[i];
+
+            std::random_shuffle(multipliers.begin(), multipliers.end());
+
+            for (size_t i = 1; i != number_of_multipliers; ++i)
+                accumulator /= multipliers[i];
+
+        }
+    }
+
+    static void testMul() {
+        for (int i = 0; i < ITERATION; ++i) {
+            int x = rand();
+            int y = rand();
+            if (rand()&1) x *= -1;
+            if (rand()&1) y *= -1;
+            big_integer a(x);
+            big_integer b(y);
+            if (to_string(a * b) != toString(1LL * x * y)) {
+                cout << "surpise mothefucker " << x << " " << y;
+                return;
+            }
+        }
+    }
 };
 
 #endif // TESTER_H

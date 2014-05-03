@@ -5,11 +5,14 @@
 using namespace std;
 
 int main(int argc, char *argv[]) {
-    big_integer d;
-    cout << to_string(d--) << endl;
-    cout << to_string(--d) << endl;
-    cout << to_string(++d) << endl;
-    cout << to_string(d++) << endl;
+    //freopen("out.txt", "w", stdout);
+    //cout << to_string(big_integer("22222222222222222222222222222222") / big_integer("11")) << endl;
+    //Tester::testMul();
+    Tester::testDiv();
+    //big_integer a("65536");
+    //big_integer b("-655999935");
+    //cout << to_string(a / b) << endl;
+    //cout << to_string(a % b) << endl;
     //cout << (x | y) << endl;
     //cout << to_string(big_integer(x) | big_integer(y)) << endl;
     //Tester::testOrAndXor();
