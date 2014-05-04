@@ -1,9 +1,6 @@
 #include "big_integer.h"
-#include <iostream>
 #include <cstdio>
-#include <cassert>
-#include <cstdlib>
-using namespace std;
+#include <algorithm>
 
 int big_integer::cmpr(const big_integer &b) const {
     int sign1 = sign;
@@ -46,8 +43,8 @@ big_integer big_integer::mulShort(unsigned short b) {
         if (i == a.digits.size())
             a.digits.push_back (0);
         unsigned int cur = carry + (unsigned int)a.digits[i] * b;
-        a.digits[i] = cur;
-        carry = cur>>CNT_BIT_OF_BASE;
+        a.digits[i] = (unsigned short)cur;
+        carry = (unsigned short)(cur>>CNT_BIT_OF_BASE);
     }
     while (a.digits.size() > 1 && a.digits.back() == 0)
         a.digits.pop_back();
@@ -82,31 +79,70 @@ big_integer big_integer::divLong(const big_integer& value, big_integer& remainde
     if ((int)2 * b.digits.back() < BASE) {
         a = a.mulShort(BASE / (b.digits.back() + 1));
         b = b.mulShort(BASE / (b.digits.back() + 1));
-        assert((int)2 * b.digits.back() >= BASE);
     }
 
     int n = b.digits.size();
     int m = a.digits.size() - n;
     big_integer q;
     q.digits.resize(m + 1);
-    big_integer base(BASE);
-    big_integer pw[m + 1];
-    pw[0] = b;
-    for (int i = 1; i <= m; ++i)
-        pw[i] = base * pw[i - 1];
+    big_integer saveB = b;
+    big_integer pw = b;
 
-    if (a >= pw[m]) {
+    reverse(pw.digits.begin(), pw.digits.end());
+    for (int i = 0; i < m; ++i)
+        pw.digits.push_back(0);
+    reverse(pw.digits.begin(), pw.digits.end());
+
+    if (a >= pw) {
         q.digits[m] = 1;
-        a -= pw[m];
+        a -= pw;
     }
 
     for (int j = m - 1; j >= 0; --j) {
-        unsigned short dig1 = (n + j < a.digits.size() ? a.digits[n + j] : 0);
-        unsigned short dig2 = (n + j - 1 < a.digits.size() ? a.digits[n + j - 1] : 0);
+        unsigned short dig1 = (n + j < (int)a.digits.size() ? a.digits[n + j] : 0);
+        unsigned short dig2 = (n + j - 1 < (int)a.digits.size() ? a.digits[n + j - 1] : 0);
         unsigned int curq = ((unsigned int)dig1 * BASE + dig2) / b.digits[n - 1];
-        curq = min(curq, (unsigned int)(BASE - 1));
-        a -= pw[j].mulShort(curq);
-        for (; a < 0; curq--, a += pw[j]);
+        curq = std::min(curq, (unsigned int)(BASE - 1));
+        curq++;
+
+        while (true) {//almost two steps
+            curq--;
+            pw = saveB;
+            unsigned int carry = 0;
+            for (size_t i = 0; i < pw.digits.size() || carry; ++i) {
+                if (i == pw.digits.size())
+                    pw.digits.push_back(0);
+                unsigned int cur = carry + (unsigned int)pw.digits[i] * curq;
+                pw.digits[i] = cur;
+                carry = (unsigned short)(cur>>CNT_BIT_OF_BASE);
+            }
+
+            while (pw.digits.size() > 1 && pw.digits.back() == 0)
+                pw.digits.pop_back();
+            if (pw.digits.size() == 1 && pw.digits.back() == 0)
+                pw.sign = 0;
+            int power = (pw.sign == 0 ? 1 : j + pw.digits.size());
+            if (power > (int)a.digits.size())
+                continue;
+            carry = 0;
+            std::vector <unsigned short> saveDigits(a.digits.begin() + j, a.digits.begin() + j + pw.digits.size());
+            for (size_t i=0; i + j < a.digits.size() && (i < pw.digits.size() || carry); ++i) {
+                int cur = (int)a.digits[i + j] - (int)carry - (int)(i < pw.digits.size() ? pw.digits[i] : 0);//here int
+                carry = cur < 0;
+                if (carry) cur += BASE;
+                a.digits[i + j] = (unsigned short)cur;
+            }
+
+            if (carry != 0) {
+                for (size_t i = 0; i < saveDigits.size(); ++i)
+                    a.digits[i + j] = saveDigits[i];
+            } else break;
+        }
+
+        while (a.digits.size() > 1 && a.digits.back() == 0)
+            a.digits.pop_back();
+        if (a.digits.size() == 1 && a.digits.back() == 0)
+            a.sign = 0;
         q.digits[j] = curq;
     }
 
@@ -125,11 +161,12 @@ void big_integer::additionalCode() {
 int big_integer::myOr(int x, int y) {return x | y;}
 int big_integer::myAnd(int x, int y) {return x & y;}
 int big_integer::myXor(int x, int y) {return x ^ y;}
+
 big_integer& big_integer::executeBit(big_integer curb, int (*f)(int, int)) {
    big_integer cura = *this;
    big_integer res;
    res.digits.pop_back();
-   res.digits.resize(max(digits.size(), curb.digits.size()));
+   res.digits.resize(std::max(digits.size(), curb.digits.size()));
    bool neg1 = sign < 0;
    bool neg2 = curb.sign < 0;
    while (cura.digits.size() < res.digits.size()) cura.digits.push_back(0);
@@ -169,7 +206,7 @@ big_integer::big_integer(const big_integer& value)  {
 }
 
 big_integer::big_integer(const std::string& number) {
-    string s;
+    std::string s;
     if (number == "0" || number == "-0" || number == "+0") {
         sign = 0;
         s = number;
@@ -191,7 +228,7 @@ big_integer::big_integer(const std::string& number) {
 
     while (s != "") {
         unsigned int cur = 0;
-        string res;
+        std::string res;
         for (size_t i = 0; i < s.size(); ++i) {
             cur = cur * 10 + s[i];
             unsigned short curDig = cur>>CNT_BIT_OF_BASE;
@@ -204,13 +241,12 @@ big_integer::big_integer(const std::string& number) {
     }
     while (digits.size() > 1 && digits.back() == 0)
         digits.pop_back();
-//    for (int i = 0; i < digits.size(); ++i) cout << digits[i] << " ";cout << endl;
 }
 
 big_integer::big_integer(int x) {
     char ss[30];
     sprintf(ss, "%d", x);
-    *this = big_integer(string(ss));
+    *this = big_integer(std::string(ss));
 }
 
 //assign
@@ -230,7 +266,7 @@ big_integer& big_integer::operator += (const big_integer& value) {
 
     if (sign1 >= 0 && sign2 >= 0) {
         bool carry = 0;
-        for (size_t i=0; i < max(x.digits.size(), y.digits.size()) || carry; ++i) {
+        for (size_t i=0; i < std::max(x.digits.size(), y.digits.size()) || carry; ++i) {
             if (i == x.digits.size())
                 x.digits.push_back(0);
             unsigned int cur = (unsigned int)x.digits[i] + carry + (i < y.digits.size() ? y.digits[i] : 0);
@@ -464,7 +500,7 @@ big_integer big_integer::operator ~() const {
 }
 
 std::string to_string(const big_integer& a) {
-    string res;
+    std::string res;
     bool isNegative = false;
     big_integer b = a;
     if (b.sign < 0) {
@@ -473,12 +509,7 @@ std::string to_string(const big_integer& a) {
     } else if (b.sign == 0) return "0";
     while (b.digits.size() >  1 || b.digits.back() != 0)
         res += char(b.divShort(10) + '0');
-    for (size_t i = 0; 2 * i < res.size(); ++i) {
-        char tmp = res[i];
-        res[i] = res[res.size() - i - 1];
-        res[res.size() - i - 1] = tmp;
-    }
-
+    reverse(res.begin(), res.end());
     if (isNegative)
         return "-" + res;
     return res;
