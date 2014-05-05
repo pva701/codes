@@ -467,10 +467,31 @@ big_integer operator ^ (big_integer a, const big_integer& b) {
 }
 
 big_integer& big_integer::operator >>=(int b) {
-    if (sign >= 0)
-        for (int i = 1; i <= b; ++i)
-            divShort(2);
-    else {
+    if (sign >= 0) {
+        int leng = ((int)digits.size() - 1) * CNT_BIT_OF_BASE;
+        unsigned short x = digits.back();
+        for (; x; leng++, x >>= 1);
+
+        if (b >= leng) {
+            while (digits.size() > 0) digits.pop_back();
+            sign = 0;
+            digits.push_back(0);
+        } else {
+            reverse(digits.begin(), digits.end());
+            for (int i = 0; i < b / CNT_BIT_OF_BASE; ++i) digits.pop_back();
+            b %= CNT_BIT_OF_BASE;
+            reverse(digits.begin(), digits.end());
+            if (b != 0) {
+                digits[0] >>= b;
+                for (int i = 1; i < digits.size(); ++i) {
+                    unsigned short rem = digits[i] & ((1<<b) - 1);
+                    digits[i - 1] |= rem<<(CNT_BIT_OF_BASE - b);
+                    digits[i] >>= b;
+                }
+                while (digits.size() > 1 && digits.back() == 0) digits.pop_back();
+            }
+        }
+    } else {
         this->additionalCode();
         *this >>= b;
         this->additionalCode();
@@ -479,8 +500,24 @@ big_integer& big_integer::operator >>=(int b) {
 }
 
 big_integer& big_integer::operator <<=(int b) {
-    for (int i = 1; i <= b; ++i)
-        *this *= 2;
+    reverse(digits.begin(), digits.end());
+    for (int i = 0; i < b / CNT_BIT_OF_BASE; ++i)
+        digits.push_back(0);
+    reverse(digits.begin(), digits.end());
+
+    b %= CNT_BIT_OF_BASE;
+    if (b != 0) {
+        unsigned short carry = digits[0] >>(CNT_BIT_OF_BASE - b);
+        digits[0] <<= b;
+        for (int i = 1; i < digits.size(); ++i) {
+            unsigned short newcarry = digits[i]>>(CNT_BIT_OF_BASE - b);
+            digits[i] <<= b;
+            digits[i] |= carry;
+            carry = newcarry;
+        }
+        if (carry) digits.push_back(carry);
+        while (digits.size() > 1 && digits.back() == 0) digits.pop_back();
+    }
     return *this;
 }
 
