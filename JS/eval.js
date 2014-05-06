@@ -1,4 +1,5 @@
-vars = [];
+"use strict";
+var vars = [];
 vars.push("x");
 vars.push("y");
 vars.push("z");
@@ -6,7 +7,6 @@ vars.push("z");
 function containsVars(s) {
     for (var i = 0; i < vars.length; ++i)
         if (vars[i] === s) return i;
-    return undefined;
 }
 
 function cnst(value) {
@@ -34,31 +34,38 @@ function opSub(x, y) {return x - y;}
 function opMul(x, y) {return x * y;}
 function opDiv(x, y) {return x / y;}
 
-var add = binaryOperation(opAdd);
+/*var add = binaryOperation(opAdd);
 var subtract = binaryOperation(opSub);
 var multiply = binaryOperation(opMul);
-var divide = binaryOperation(opDiv);
-var abs = function(f) {
-            return function(x, y, z) {
-                return Math.abs(f(x, y, z));
-            }
-}
+var divide = binaryOperation(opDiv);*/
 
-var log = function(f) {
-    return function(x, y, z) {
-        return Math.log(f(x, y, z));
+function makeFunction(f) {
+    return function() {
+        var functions = arguments;
+        return function() {    
+            var results = [];
+            for (var i = 0; i < functions.length; ++i)
+                results[i] = functions[i].apply(null, arguments);
+            return f.apply(null, results);
+        }
+
     }
 }
+var abs = makeFunction(Math.abs);
+var log = makeFunction(Math.log);
+var add = makeFunction(opAdd);
+var subtract = makeFunction(opSub);
+var multiply = makeFunction(opMul);
+var divide = makeFunction(opDiv);
 
-funs = [];
-funs["log"] = {f:Math.log, arn:1};
-funs["abs"] = {f:Math.abs, arn:1};
-funs["pow"] = {f:Math.pow, arn:2};
-funs["+"]   = {f:opAdd,    arn:2};
-funs["-"]   = {f:opSub,    arn:2};
-funs["*"]   = {f:opMul,    arn:2};
-funs["/"]   = {f:opDiv,    arn:2};
-
+var funs = [];
+funs["log"] = {f:makeFunction(Math.log), arn:1};
+funs["abs"] = {f:makeFunction(Math.abs), arn:1};
+funs["pow"] = {f:makeFunction(Math.pow), arn:2};
+funs["+"]   = {f:makeFunction(opAdd),    arn:2};
+funs["-"]   = {f:makeFunction(opSub),    arn:2};
+funs["*"]   = {f:makeFunction(opMul),    arn:2};
+funs["/"]   = {f:makeFunction(opDiv),    arn:2};
 
 function parse(s) {
     var stk = [];
@@ -73,18 +80,7 @@ function parse(s) {
             var parametrs = [];
             for (var j = 1; j <= arnost; j++) 
                 parametrs.push(stk.pop());
-
-            var addf = function(cfun, par) {
-                   return function() {
-                       var localPar = par;
-                       var localCfun = cfun;
-                       var numb = [];
-                       for (var i = 0; i < localPar.length; ++i)
-                           numb[i] = localPar[i].apply(null, arguments);
-                       return localCfun.apply(null, numb.reverse());
-                   }
-                }
-            stk.push(addf(fun, parametrs))
+            stk.push(fun.apply(null, parametrs.reverse()));
         } else if (containsVars(token) != undefined)
             stk.push(variable(token));
          else
@@ -92,7 +88,8 @@ function parse(s) {
     }
     return stk.pop();
 }
-
+ 
+//idaeje
 /*println(parse("x x +")(1, 2, 3));
 println(parse("x x + y * 5 +")(1, -2, 3));
 println(parse("x abs")(-1, 2, 3));
@@ -108,3 +105,7 @@ println(parse("2093101096 1943850576 /")(0,0,0));
 var expr = parse("2093101096 1943850576 /");
 println(expr(1, 2, 3));
 println(expr(3, 4, 5));
+println(parse("x y pow")(3, 4, 10));
+//println(abs(cnst(-3))(1, 2, 3));
+println(multiply(variable("y"), variable("y"))(1, 2, 3));
+//println(subtract(subtract(multiply(variable("y"),variable("y")),divide(variable("y"),log(abs(variable("x"))))),cnst(1014523727))(0,0,0));
