@@ -1,0 +1,21 @@
+<html><head></head><body>
+<pre id="out"></pre>
+<script>
+    // Helper functions
+    function escape(str) {
+        return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') ;
+    }
+
+    var logArea = document.getElementById("out");
+    function println() {
+		print.apply(null, arguments);
+        print("\n");
+    }
+
+    function print() {
+		for (var i = 0; i < arguments.length; ++i)
+			logArea.innerHTML += escape("" + arguments[i]);
+    }
+</script>
+<script src="eval.js" charset="UTF-8"></script>
+</body></html>
