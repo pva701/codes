@@ -13,7 +13,8 @@ class ChatClientWidget:public QObject
     const QString& host;
     int port;
     AuthenticationForm *autFrm;
-    ChatClient *server;
+    ChatClient *chatClient;
+    QTcpSocket *socket;
 public:
     ChatClientWidget(const QString& hosty, int porty);
     void start();

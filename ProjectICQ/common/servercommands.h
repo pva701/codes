@@ -3,9 +3,10 @@
 
 #include <qnumeric.h>
 
-class ServerCommands {
-public:
-    static const quint16 AUTH = 0;
-    static const quint16 LOAD_USERLIST = 1;
-};
+namespace ServerCommands {
+    const quint16 AUTH = 0;
+    const quint16 LOAD_USERLIST = 1;
+    const quint16 SEND_MESSAGE = 2;
+    const quint16 TIME_SERVER = 4;
+}
 #endif 

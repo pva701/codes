@@ -2,9 +2,9 @@
 
 Dialog::Dialog() {}
 
-Dialog::Dialog(int numDialogg, QString namee): numDialog(numDialogg), tittle(namee) {}
+Dialog::Dialog(quint16 numDialogg, QString namee): numDialog(numDialogg), tittle(namee), tabWidget(NULL) {}
 
-int Dialog::dialog() {
+quint16 Dialog::dialog() {
     return numDialog;
 }
 
@@ -34,4 +34,12 @@ QTextEdit* Dialog::history() {
 
 QTextEdit* Dialog::message() {
     return teMessage;
+}
+
+void Dialog::setWidget(QWidget *w) {
+    tabWidget = w;
+}
+
+QWidget* Dialog::widget() {
+    return tabWidget;
 }

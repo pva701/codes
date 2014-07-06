@@ -23,7 +23,7 @@ class ChatClient:public QWidget
 {
     Q_OBJECT
 
-    static const int INTERVAL_TIME_USERLIST = 2000;//ms
+    static const int INTERVAL_LOAD_USERLIST = 2000;//ms
 
     QTcpSocket *pSocket;
     QTabWidget *tbwDialogs;

@@ -8,19 +8,22 @@ protected:
     QListWidgetItem *item;
     QTextEdit *teHistory;
     QTextEdit *teMessage;
-    int numDialog;
+    quint16 numDialog;
     QString tittle;
+    QWidget *tabWidget;
 public:
     Dialog();
-    Dialog(int numDialogg, QString namee);
+    Dialog(quint16 numDialogg, QString namee);
     QListWidgetItem* pointerToItem();
     QString name();
-    int dialog();
+    quint16 dialog();
     void setListWidgetItem(QListWidgetItem* ptr);
     void setTEHistory(QTextEdit *te);
     void setTEMessage(QTextEdit *te);
     QTextEdit* history();
     QTextEdit* message();
+    QWidget* widget();
+    void setWidget(QWidget *wid);
 
 };
 

@@ -1,5 +1,6 @@
 #include "chatserver.h"
 
+
 ChatServer::ChatServer(int port, QWidget *widget /*= 0*/):QWidget(widget),
     DRIVER_OF_DATABASE("QMYSQL"), NAME_OF_CONNECTION_TO_DATABASE("connection"),
     NAME_OF_DATABASE("clientinfodb"), LOGIN_TO_DATABASE("root"),
@@ -33,57 +34,66 @@ ChatServer::ChatServer(int port, QWidget *widget /*= 0*/):QWidget(widget),
 }
 
 
-void ChatServer::slotNewConnection() {
-    QTcpSocket *pSock = pTCPServer->nextPendingConnection();
-    connect(pSock, SIGNAL(disconnected()), pSock, SLOT(deleteLater()));
-    connect(pSock, SIGNAL(readyRead()), this, SLOT(slotReadClient()));
-    //sendToClient(pSock, "Server response: connected!");
+//FOR WORKING ========================================================================================
+//====================================================================================================
+void ChatServer::insertIntoDatabase(quint16 dialog, quint16 fromId, QDateTime sendTime, const QString& content) {
+    if (!clientinfodb.isOpen())
+        if (!clientinfodb.open()) {
+            qDebug() << "Server: database isn't open!";
+            return;
+        }
+
+    QSqlQuery query(QSqlDatabase::database(NAME_OF_CONNECTION_TO_DATABASE));
+    bool status = query.exec(QString("INSERT INTO %1 (from_id, send_time, content) VALUES (%2, '%3', '%4');")
+            .arg(QString("history_dialog%1").arg(dialog))
+            .arg(QString("%1").arg(fromId))
+            .arg(sendTime.toString("yyyy-MM-dd hh:mm:ss"))
+            .arg(QString("%1").arg(content)));
+    if (!status)
+        qDebug() << "Server: Cannot insert into database!";
 }
 
-void ChatServer::slotReadClient() {
-    QTcpSocket *pClientSocket = (QTcpSocket*)sender();
-    BytesReaderWriter in(pClientSocket);
-    in.setVersion(QDataStream::Qt_4_5);
 
-    for (;;) {//for several packages
-        if (sizeOfBlock == 0) {//unknown size of block
-            if (pClientSocket->bytesAvailable() < sizeof(quint16))//if sizeOfBlock doesnt hold in package
-                break;
-            sizeOfBlock = in.readT<quint16>();
+QVector <QTcpSocket*> ChatServer::membersOfDialog(int dialog) {
+    QVector <QTcpSocket*> result;
+    if (!clientinfodb.isOpen())
+        if (!clientinfodb.open()) {
+            qDebug() << "Server: database isn't open!";
+            return result;
         }
 
-        if (pClientSocket->bytesAvailable() < sizeOfBlock)//if all data doesnt received yet
-            break;
-        sizeOfBlock = 0;
-        quint16 typeOfCommand = in.readT<quint16>();
-        if (typeOfCommand == ServerCommands::AUTH) {
-            QString log = in.readT<QString>();
-            QString pass = in.readT<QString>();
-            sendToClient(pClientSocket, login(log, pass));
-            return;
-        } else if (typeOfCommand == ServerCommands::LOAD_USERLIST) {
-            int id = in.readT<quint16>();
-            sendToClient(pClientSocket, loadUserlist(id));
-            return;
-        }
+    QSqlQuery query(QSqlDatabase::database(NAME_OF_CONNECTION_TO_DATABASE));
+    qDebug() << "dialog in database " << dialog << endl;
+    bool status = query.exec(QString("SELECT members FROM members_dialogs WHERE id_dialog=%1;").arg(dialog));
+    if (!status) {
+        qDebug() << "Server: Cannot insert into database!";
+        return result;
     }
+
+    query.next();
+    QString str = query.value(0).toString();
+    QTextStream input(&str);
+
+    QVector <int> members;
+    while (!input.atEnd()) {
+        int number;
+        input >> number;
+        members.push_back(number);
+    }
+
+    for (int i = 0; i < members.size(); ++i) {
+        QTcpSocket *res = online.socket(members[i]);
+        if (res != NULL)
+            result.push_back(res);
+    }
+    return result;
 }
+//END OF WORKING =======================================================================================
 
-void ChatServer::sendToClient(QTcpSocket *pClientSock, const QByteArray& bytearray) {
-    //pTEMessage->append("Authentication -> Send answer." + QString("%1").arg(bytearray.size()));
-    pClientSock->write(bytearray);
-    /*QByteArray arrBlock;
-    QDataStream out(&arrBlock, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_5);
-    out << quint16(0) << QTime::currentTime() << s;
-    out.device()->seek(0);
-    out << quint16(arrBlock.size() - sizeof(quint16));
-    pClientSock->write(arrBlock);*/
-}
 
-//commands
-
-QByteArray ChatServer::login(const QString& userLogin, const QString& userPassword) {
+//COMMANDS @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+//@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+QByteArray ChatServer::login(const QString& userLogin, const QString& userPassword, QTcpSocket *socket) {
     QByteArray outArray;
     BytesReaderWriter out(&outArray, QIODevice::WriteOnly);
     out.setVersion(QDataStream::Qt_4_5);
@@ -111,8 +121,10 @@ QByteArray ChatServer::login(const QString& userLogin, const QString& userPasswo
             else ok = true;
         }
     }
-    if (ok)
+    if (ok) {
         out << quint16(ServerFlags::Success_Auth) << quint16(query.value(0).toInt()) << userLogin;
+        online.setSocket(query.value(0).toInt(), socket);
+    }
     out.confirm();
     return outArray;
 }
@@ -145,3 +157,82 @@ QByteArray ChatServer::loadUserlist(int userId) {
     out.confirm();
     return outArray;
 }
+
+void ChatServer::sendMessage(quint16 dialog, quint16 fromId, QDateTime sendTime, const QString& content) {
+    QByteArray outArray;
+    BytesReaderWriter out(&outArray, QIODevice::WriteOnly);
+    out.setVersion(QDataStream::Qt_4_5);
+    out << quint16(ServerCommands::SEND_MESSAGE);
+    out << dialog << fromId << sendTime << content;
+    out.confirm();
+    pTEMessage->append("Send message from " + QString("%1").arg(fromId) + " in dialog " + QString("%1").arg(dialog));
+    QVector <QTcpSocket*> members = membersOfDialog(dialog);
+    qDebug() << "members " << members.size();
+    for (int i = 0; i < members.size(); ++i)
+        sendToClient(members[i], outArray);
+    insertIntoDatabase(dialog, fromId, sendTime, content);
+    //insert into database
+}
+//END OF COMMANDS @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+
+//INTERFACE OF THE SERVER ============================================================================
+//====================================================================================================
+
+void ChatServer::slotNewConnection() {
+    QTcpSocket *pSock = pTCPServer->nextPendingConnection();
+    qDebug() << "new connection " << pSock << endl;
+    connect(pSock, SIGNAL(disconnected()), pSock, SLOT(deleteLater()));
+    connect(pSock, SIGNAL(disconnected()), this, SLOT(slotDisconnectedClient()));///
+    connect(pSock, SIGNAL(readyRead()), this, SLOT(slotReadClient()));
+    //sendToClient(pSock, "Server response: connected!");
+}
+
+void ChatServer::slotDisconnectedClient() {//TODO
+    QTcpSocket *pClientSocket = (QTcpSocket*)sender();
+    online.remove(pClientSocket);
+}
+
+void ChatServer::slotReadClient() {
+    QTcpSocket *pClientSocket = (QTcpSocket*)sender();
+    BytesReaderWriter in(pClientSocket);
+    in.setVersion(QDataStream::Qt_4_5);
+
+    for (;;) {//for several packages
+        if (sizeOfBlock == 0) {//unknown size of block
+            if (pClientSocket->bytesAvailable() < sizeof(quint16))//if sizeOfBlock doesnt hold in package
+                break;
+            sizeOfBlock = in.readT<quint16>();
+        }
+
+        if (pClientSocket->bytesAvailable() < sizeOfBlock)//if all data doesnt received yet
+            break;
+        sizeOfBlock = 0;
+        quint16 typeOfCommand = in.readT<quint16>();
+        if (typeOfCommand == ServerCommands::AUTH) {
+            QString log = in.readT<QString>();
+            QString pass = in.readT<QString>();
+            sendToClient(pClientSocket, login(log, pass, pClientSocket));
+            return;
+        } else if (typeOfCommand == ServerCommands::LOAD_USERLIST) {
+            quint16 id = in.readT<quint16>();
+            sendToClient(pClientSocket, loadUserlist(id));
+            return;
+        } else if (typeOfCommand == ServerCommands::SEND_MESSAGE) {
+            quint16 dialog = in.readT<quint16>();
+            quint16 fromId = in.readT<quint16>();
+            QDateTime timeSend = in.readT<QDateTime>();
+            QString content = in.readT<QString>();
+            sendMessage(dialog, fromId, timeSend, content);
+            return;
+        }
+    }
+}
+
+void ChatServer::sendToClient(QTcpSocket *pClientSock, const QByteArray& bytearray) {
+    qDebug() << "send to client " << pClientSock << endl;
+    //pTEMessage->append("Authentication -> Send answer." + QString("%1").arg(bytearray.size()));
+    pClientSock->write(bytearray);
+}
+
+//END OF THE INTERFACE ==============================================================================

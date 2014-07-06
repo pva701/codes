@@ -20,18 +20,20 @@ class AuthenticationForm : public QWidget
 {
     Q_OBJECT
 public:
-    explicit AuthenticationForm(const QString& host, int port, QWidget *parent = 0);
+    explicit AuthenticationForm(QTcpSocket *socket, const QString& host, int port, QWidget *parent = 0);
     QLabel *lblLogin;
     QLineEdit *teLogin;
     QLabel *lblPassword;
     QLineEdit *tePassword;
     QTcpSocket *pSocket;
     quint16 sizeOfBlock;
+    QString host;
+    int port;
     void keyPressEvent(QKeyEvent *e);
 
     void sendToServer(const QByteArray& bytearray);
     void statusAuth(quint16 status, int userId, const QString& userLogin, const QString& msg);
-    ~AuthenticationForm();
+    //~AuthenticationForm();
 signals:
     void authenticated(int, QString);
     void unsupportedCommand();
@@ -39,6 +41,7 @@ private slots:
     void slotLogin();
     void slotReadFromServer();
     void slotError(QAbstractSocket::SocketError err);
+    void slotDisconnected();
 
 public slots:
 };

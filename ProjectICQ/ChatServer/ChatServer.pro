@@ -13,12 +13,14 @@ TEMPLATE = app
 SOURCES += \
     main.cpp \
     chatserver.cpp \
-    ../common/bytesreaderwriter.cpp
+    ../common/bytesreaderwriter.cpp \
+    usersonline.cpp
 
 HEADERS  += \
     chatserver.h \
     ../common/bytesreaderwriter.h \
     ../common/serverflags.h \
-    ../common/servercommands.h
+    ../common/servercommands.h \
+    usersonline.h
 
 FORMS    +=

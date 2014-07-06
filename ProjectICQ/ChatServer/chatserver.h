@@ -7,13 +7,13 @@
 #include <QtGui/QMessageBox>
 #include <QtGui/QVBoxLayout>
 #include <QtGui/QLabel>
-#include <QtCore/QTime>
 #include <QSqlDatabase>
 #include <QSqlQuery>
 #include <QSqlError>
 #include "../common/bytesreaderwriter.h"
 #include "../common/serverflags.h"
 #include "../common/servercommands.h"
+#include "usersonline.h"
 
 class ChatServer:public QWidget
 {
@@ -29,14 +29,24 @@ class ChatServer:public QWidget
     QTextEdit *pTEMessage;
     quint16 sizeOfBlock;
     QSqlDatabase clientinfodb;
+    UsersOnline online;
 public:
     ChatServer(int port, QWidget *widget = 0);
 private:
-    void sendToClient(QTcpSocket *pSock, const QByteArray& s);
-    QByteArray login(const QString& userLogin, const QString& userPassword);
+    //for working
+    void insertIntoDatabase(quint16 dialog, quint16 fromId, QDateTime sendTime, const QString& content);
+    QVector <QTcpSocket*> membersOfDialog(int dialog);
+
+    //commands
+    QByteArray login(const QString& userLogin, const QString& userPassword, QTcpSocket *socket);
     QByteArray loadUserlist(int userId);
+    void sendMessage(quint16 dialog, quint16 fromId, QDateTime sendTime, const QString& content);
+
+    //interface of the server
+    void sendToClient(QTcpSocket *pSock, const QByteArray& s);
 private slots:
     void slotNewConnection();
+    void slotDisconnectedClient();
     void slotReadClient();
 };
 

@@ -15,7 +15,7 @@ clientinfodb
     dialogs_user2                                  2) update closed_time when close_dialog
     ....                                           3) insert when add new friend
 
-    members_dialogs: id_dialog, [i1, i2, ...] ->  1) insert when create conference
+    members_dialogs: id_dialog, members[i1, i2, ...] ->  1) insert when create conference
                                                   2) insert when add new friend
     history_dialog1: id, from_id, send_time, content  -> 1) insert when submit message
     history_dialog2
