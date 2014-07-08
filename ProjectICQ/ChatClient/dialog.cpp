@@ -2,7 +2,7 @@
 
 Dialog::Dialog() {}
 
-Dialog::Dialog(quint16 numDialogg, QString namee): numDialog(numDialogg), tittle(namee), tabWidget(NULL) {}
+Dialog::Dialog(quint16 numDialogg, QString namee): numDialog(numDialogg), tittle(namee), tabWidget(NULL), teHistory(NULL), teMessage(NULL) {}
 
 quint16 Dialog::dialog() {
     return numDialog;

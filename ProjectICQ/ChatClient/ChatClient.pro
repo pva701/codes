@@ -17,7 +17,10 @@ SOURCES += \
     chatclient.cpp \
     authenticationform.cpp \
     ../common/bytesreaderwriter.cpp \
-    dialog.cpp
+    dialog.cpp \
+    serverlistener.cpp \
+    servertalker.cpp \
+    message.cpp
 
 HEADERS  += \
     user.h \
@@ -27,5 +30,8 @@ HEADERS  += \
     authenticationform.h \
     ../common/bytesreaderwriter.h \
     ../common/serverflags.h \
-    ../common/servercommands.h
+    ../common/servercommands.h \
+    serverlistener.h \
+    servertalker.h \
+    message.h
 

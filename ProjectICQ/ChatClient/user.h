@@ -6,13 +6,12 @@
 class User:public Dialog
 {
     int userId;
-    QString userLogin;
     bool isFr;
 public:
+    enum UserStatus {Not_Friend, Is_Friend};
     User();
-    User(int id, const QString& log, int numDialog, QString pseudonymm, bool isF);
+    User(int id, int numDialog, QString pseudonymm, bool isF);
     int id();
-    QString login();
     bool isFriend();
 };
 

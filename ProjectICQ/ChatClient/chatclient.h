@@ -18,45 +18,53 @@
 #include "../common/bytesreaderwriter.h"
 #include "../common/servercommands.h"
 #include "../common/serverflags.h"
+#include "serverlistener.h"
+#include "servertalker.h"
 
 class ChatClient:public QWidget
 {
     Q_OBJECT
 
-    static const int INTERVAL_TIME_USERLIST = 2000;//ms
+    static const int INTERVAL_LOAD_USERLIST = 2000;//ms
+    static const int INTERVAL_ADD_USER = 2000;
+    static const int INTERVAL_LOAD_HISTORY = 2000;
 
-    QTcpSocket *pSocket;
     QTabWidget *tbwDialogs;
     QListWidget *lwOfFriends;
 
     QVector <User*> userlist;
-    quint16 sizeOfBlock;
     Dialog *activeDialog;
-    quint16 userId;
+    quint16 myId;
     QString userLogin;
+    QTcpSocket *socket;
+    ServerListener *listener;
+    ServerTalker *talker;
+
+    User fakeUser;
+    QVector <Message*> fakeHistory;
 public:
     ChatClient(QTcpSocket *socket, const QString& strHost, int nPort, int idUserx, QString userLoginx, QWidget *pwig = 0);
 
 private:
-    void loadUserlist(QVector <User*>& fr);
-    void loadHistory(Dialog *dg);
-    void sendToServer(const QByteArray& bytearray);
-    QDateTime currentDateTimeFromServer();
-    void gotMessage(quint16 dialogNum, quint16 fromId, QDateTime sendTime, const QString& message);
-
     void createTab(Dialog *dg);
     void activateTab(Dialog *dg);
 
-    bool waitFullStream(int mills, BytesReaderWriter& in);
+    void loadUserlist(quint16 myId);
+    QString addUserById(quint16 mid, quint16 fid, bool status);
+    User addUserByLogin(quint16 myId, const QString& log, bool status);
+    QVector <Message*> loadHistory(Dialog *dg);
 private slots:
-    void slotReadServer();
     void slotError(QAbstractSocket::SocketError);
-    void slotConnected();
+    void slotPrepareSendMessage();
+    void slotUserlistRecieved(const QVector <User*>& us);
+    void slotUserAdded(quint16 mid, quint16 did, const QString& pseud, bool status);
+    void slotHistoryRecieved(const QVector<Message*>& hs);
+    void slotMessageRecieved(quint16 dialogNum, quint16 fromId, QDateTime sendTime, const QString& message);
+    void slotYouAddedInUserlist(quint16 frId);
 
     void slotDoubleClickedUserlistItem(QListWidgetItem*);
     void slotTabClosed(int);
     void slotCurrentTabChanged(int);
-    void slotSendMessage();
     //void slotOverrideKeyPress(QKeyEvent *e);
 };
 

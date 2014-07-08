@@ -63,17 +63,17 @@ void AuthenticationForm::slotReadFromServer() {//read from the server
         if (!sizeOfBlock) {
             if (pSocket->bytesAvailable() < sizeof(quint16))
                 break;
-            sizeOfBlock = in.readT<quint16>();
+            in >> sizeOfBlock;
         }
         if (pSocket->bytesAvailable() < sizeOfBlock)
             break;
-        quint16 typeOfCommand = in.readT<quint16>();
+        quint16 typeOfCommand;
+        in >> typeOfCommand;
         sizeOfBlock = 0;
         if (typeOfCommand == ServerCommands::AUTH) {
-            quint16 status = in.readT<quint16>();
-            quint16 userId = in.readT<quint16>();
-            QString userLogin = in.readT<QString>();
-            QString msg = in.readT<QString>();
+            quint16 status, userId;
+            QString userLogin, msg;
+            in >> status >> userId >> userLogin >> msg;
             statusAuth(status, userId, userLogin, msg);
             return;
        } else

@@ -35,13 +35,17 @@ public:
 private:
     //for working
     void insertIntoDatabase(quint16 dialog, quint16 fromId, QDateTime sendTime, const QString& content);
-    QVector <QTcpSocket*> membersOfDialog(int dialog);
-
+    QVector <quint16> membersOfDialog(quint16 dialog);
+    QVector <QTcpSocket*> onlineMembersOfDialog(quint16 dialog);
     //commands
     QByteArray login(const QString& userLogin, const QString& userPassword, QTcpSocket *socket);
     QByteArray loadUserlist(int userId);
     void sendMessage(quint16 dialog, quint16 fromId, QDateTime sendTime, const QString& content);
-
+    QByteArray addUserById(quint16 myId, quint16 frId, bool status);
+    QByteArray addUserByLogin(quint16 myId, const QString& frLog, bool status);
+    void changeStatus(quint16 userId, quint16 frId, bool status);
+    QByteArray youAddedInUserlist(quint16 myId);
+    QByteArray loadHistory(quint16 dialogId);
     //interface of the server
     void sendToClient(QTcpSocket *pSock, const QByteArray& s);
 private slots:
