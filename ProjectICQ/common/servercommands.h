@@ -13,5 +13,7 @@ namespace ServerCommands {
     const quint16 CHANGE_STATUS = 6;
     const quint16 YOU_ADDED_IN_USERLIST = 7;
     const quint16 LOAD_HISTORY = 8;
+    const quint16 REGISTER_USER = 9;
+    const quint16 FIND_USER = 10;
 }
 #endif 

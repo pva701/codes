@@ -34,20 +34,25 @@ public:
     ChatServer(int port, QWidget *widget = 0);
 private:
     //for working
-    void insertIntoDatabase(quint16 dialog, quint16 fromId, QDateTime sendTime, const QString& content);
+    void insertIntoDatabaseMessage(quint16 dialog, quint16 fromId, QDateTime sendTime, const QString& content);
     QVector <quint16> membersOfDialog(quint16 dialog);
     QVector <QTcpSocket*> onlineMembersOfDialog(quint16 dialog);
     //commands
     QByteArray login(const QString& userLogin, const QString& userPassword, QTcpSocket *socket);
     QByteArray loadUserlist(int userId);
     void sendMessage(quint16 dialog, quint16 fromId, QDateTime sendTime, const QString& content);
-    QByteArray addUserById(quint16 myId, quint16 frId, bool status);
-    QByteArray addUserByLogin(quint16 myId, const QString& frLog, bool status);
+    QByteArray addUserById(quint16 myId, std::pair <quint16, QString> fr, bool status);
+    QByteArray addUserByLogin(quint16 myId, std::pair <quint16, QString> fr, bool status);
     void changeStatus(quint16 userId, quint16 frId, bool status);
-    QByteArray youAddedInUserlist(quint16 myId);
+    void youAddedInUserlist(std::pair <quint16, QString> me, quint16 frId);
     QByteArray loadHistory(quint16 dialogId);
-    //interface of the server
+    QByteArray registerUser(const QString& userLogin, const QString& pseud, const QString& pass);
     void sendToClient(QTcpSocket *pSock, const QByteArray& s);
+    quint16 addUser(quint16 myId, std::pair <quint16, QString> fr, bool status);
+    QByteArray findUser(const QString& log);
+
+    std::pair <quint16, QString> userId(const QString& log);
+    std::pair <quint16, QString> userId(quint16 id);
 private slots:
     void slotNewConnection();
     void slotDisconnectedClient();

@@ -9,10 +9,11 @@ class UsersOnline
 public:
     UsersOnline();
     void setSocket(int userId, QTcpSocket *sock);
-    bool isAuth(int userId);
+    bool isOnline(int userId);
     QTcpSocket *socket(int userId);
     void remove(QTcpSocket *socket);
     int usersOnline();
+    quint16 idUser(QTcpSocket *sock);
 };
 
 #endif // USERSONLINE_H

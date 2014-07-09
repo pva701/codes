@@ -10,14 +10,18 @@ void UsersOnline::setSocket(int userId, QTcpSocket *sock) {
 }
 
 
-bool UsersOnline::isAuth(int userId) {
+bool UsersOnline::isOnline(int userId) {
     return users.find(userId) != users.end();
 }
 
 QTcpSocket* UsersOnline::socket(int userId) {
-    if (isAuth(userId))
+    if (isOnline(userId))
         return users[userId];
     return NULL;
+}
+
+quint16 UsersOnline::idUser(QTcpSocket *sock) {
+    return sockets[sock];
 }
 
 void UsersOnline::remove(QTcpSocket *socket) {

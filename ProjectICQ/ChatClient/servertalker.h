@@ -12,6 +12,7 @@
 class ServerTalker:public QObject
 {
     Q_OBJECT
+private:
     QTcpSocket *pSocket;
     quint16 sizeOfBlock;
 

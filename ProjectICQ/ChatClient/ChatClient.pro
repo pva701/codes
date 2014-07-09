@@ -20,7 +20,9 @@ SOURCES += \
     dialog.cpp \
     serverlistener.cpp \
     servertalker.cpp \
-    message.cpp
+    message.cpp \
+    clientsocket.cpp \
+    registrationform.cpp
 
 HEADERS  += \
     user.h \
@@ -33,5 +35,7 @@ HEADERS  += \
     ../common/servercommands.h \
     serverlistener.h \
     servertalker.h \
-    message.h
+    message.h \
+    clientsocket.h \
+    registrationform.h
 

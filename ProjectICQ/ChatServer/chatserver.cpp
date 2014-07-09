@@ -35,7 +35,7 @@ ChatServer::ChatServer(int port, QWidget *widget /*= 0*/):QWidget(widget),
 
 //FOR WORKING ========================================================================================
 //====================================================================================================
-void ChatServer::insertIntoDatabase(quint16 dialog, quint16 fromId, QDateTime sendTime, const QString& content) {
+void ChatServer::insertIntoDatabaseMessage(quint16 dialog, quint16 fromId, QDateTime sendTime, const QString& content) {
     if (!clientinfodb.isOpen())
         if (!clientinfodb.open()) {
             qDebug() << "Server: database isn't open!";
@@ -52,7 +52,6 @@ void ChatServer::insertIntoDatabase(quint16 dialog, quint16 fromId, QDateTime se
         qDebug() << "Server: Cannot insert into database!";
 }
 
-
 QVector <quint16> ChatServer::membersOfDialog(quint16 dialog) {
     QVector <quint16> members;
     if (!clientinfodb.isOpen())
@@ -68,7 +67,6 @@ QVector <quint16> ChatServer::membersOfDialog(quint16 dialog) {
         qDebug() << "Server: Cannot insert into database!";
         return members;
     }
-
     query.next();
     QString str = query.value(0).toString();
     QTextStream input(&str);
@@ -116,7 +114,7 @@ QByteArray ChatServer::login(const QString& userLogin, const QString& userPasswo
     bool ok = false;
     QSqlQuery query(QSqlDatabase::database(NAME_OF_CONNECTION_TO_DATABASE));
     if (opened) {
-        query.exec("SELECT id, user_password FROM users WHERE user_login = '" + userLogin + "';");
+        query.exec("SELECT id, user_password, pseudonym FROM users WHERE user_login = '" + userLogin + "';");
         if (query.size() == 0)
             out << quint16(ServerFlags::AE_Wrong_Login);
         else {
@@ -126,8 +124,10 @@ QByteArray ChatServer::login(const QString& userLogin, const QString& userPasswo
             else ok = true;
         }
     }
+
     if (ok) {
-        out << quint16(ServerFlags::Success_Auth) << quint16(query.value(0).toInt()) << userLogin;
+        pTEMessage->append("Authenticated " + userLogin);
+        out << quint16(ServerFlags::Success_Auth) << quint16(query.value(0).toInt()) << query.value(2).toString();
         online.setSocket(query.value(0).toInt(), socket);
     }
     out.confirm();
@@ -152,6 +152,7 @@ QByteArray ChatServer::loadUserlist(int userId) {
     out << quint16(usersId.size());
     for (int i = 0; i < usersId.size(); ++i) {
         query.exec("SELECT pseudonym FROM users WHERE id=" + QString("%1").arg(usersId[i]) + ";");
+        qDebug() << "LOAD USERLIST FOR QUERY " << query.size();
         query.next();
         QString pseud = query.value(0).toString();
         out << usersId[i] << dialogId[i] << pseud << isFriend[i];
@@ -173,66 +174,61 @@ void ChatServer::sendMessage(quint16 dialog, quint16 fromId, QDateTime sendTime,
     qDebug() << "members " << members.size();
     for (int i = 0; i < members.size(); ++i)
         sendToClient(members[i], outArray);
-    insertIntoDatabase(dialog, fromId, sendTime, content);
+    insertIntoDatabaseMessage(dialog, fromId, sendTime, content);
     //insert into database
 }
 
-QByteArray ChatServer::addUserById(quint16 myId, quint16 frId, bool status) {
-    QByteArray outArray;
-    BytesReaderWriter out(&outArray, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_5);
-    out << quint16(ServerCommands::ADD_USER_BY_ID);
-
+quint16 ChatServer::addUser(quint16 myId, std::pair <quint16, QString> fr, bool status) {
     QSqlQuery query(QSqlDatabase::database(NAME_OF_CONNECTION_TO_DATABASE));
-    query.exec(QString("SELECT pseudonym FROM users WHERE id =%1;").arg(frId));
-    query.next();
-    QString pseud = query.value(0).toString();
-    qDebug() << query.size() << " " << pseud << endl;
-    query.exec(QString("SELECT dialog_id FROM userlist_user%1 WHERE friend_id=%2;").arg(frId).arg(myId));
-    query.next();
-    quint16 dialogId = query.value(0).toInt();
-    query.exec(QString("INSER INTO userlist_user%1 VALUE(%2, %3, %4);").arg(myId).arg(frId).arg(dialogId).arg(status));
-
-    out << quint16(frId) << quint16(dialogId) << pseud;
-    out.confirm();
-    return outArray;
-}
-
-QByteArray ChatServer::addUserByLogin(quint16 myId, const QString& frLog, bool status) {
-    QByteArray outArray;
-    BytesReaderWriter out(&outArray, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_5);
-    out << quint16(ServerCommands::ADD_USER_BY_LOGIN);
-
-    QSqlQuery query(QSqlDatabase::database(NAME_OF_CONNECTION_TO_DATABASE));
-    query.exec(QString("SELECT id, pseudonym FROM users WHERE user_login=%1").arg(frLog) + ";");
-    query.next();
+    query.exec(QString("SELECT dialog_id FROM userlist_user%1 WHERE friend_id=%2;").arg(fr.first).arg(myId));
     quint16 dialogId;
-    quint16 frId = query.value(0).toInt();
-    QString pseud = query.value(1).toString();
-    query.exec(QString("SELECT dialog_id FROM userlist_user%1 WHERE friend_id=%2;").arg(myId).arg(frId));
-    if (query.size() == 0) {
-        query.exec("SELECT COUNT(*) FROM members_dialogs;");
+
+    if (query.size() == 0) {//doesn't exists
+        qDebug() << "NOT FOUND USER";
+        query.exec("SELECT MAX(dialog_id) AS mx FROM members_dialogs;");
         query.next();
-        quint16 numberOfDialogs = query.value(0).toInt();
+        quint16 numberOfDialog = query.value(0).toInt() + 1;
         //history_dialog1: id, from_id, send_time, content
         query.exec(QString("CREATE TABLE history_dialog%1 ("
                    "`id` integer not null primary key auto_increment,"
                    "`from_id` integer not null,"
                    "`send_time` datetime not null,"
-                   "`content` longtext not null);").arg(numberOfDialogs + 1));
+                   "`content` longtext not null);").arg(numberOfDialog));
         query.exec(QString("INSERT INTO members_dialogs VALUE(%1, '%2 %3');").
-                   arg(numberOfDialogs + 1).arg(myId).arg(frId));
-        dialogId = numberOfDialogs + 1;
+                   arg(numberOfDialog).arg(myId).arg(fr.first));
+        dialogId = numberOfDialog;
+        query.exec(QString("INSERT INTO userlist_user%1 VALUE(%2, %3, %4);").
+                   arg(myId).arg(fr.first).arg(dialogId).arg(status));
     } else if (query.size() == 1) {
+        qDebug() << "FOUND USER";
+        query.next();
         dialogId = query.value(0).toInt();
-        query.exec(QString("INSER INTO userlist_user%1 VALUE(%2, %3, %4);").
-                   arg(myId).arg(frId).arg(dialogId).arg(bool(status)));
+        query.exec(QString("INSERT INTO userlist_user%1 VALUE(%2, %3, %4);").
+                   arg(myId).arg(fr.first).arg(dialogId).arg(bool(status)));
     } else
         qDebug() << "Strange in addUserByLogin";
+    return dialogId;
 
+}
 
-    out << quint16(frId) << quint16(dialogId) << pseud << status;
+QByteArray ChatServer::addUserById(quint16 myId, std::pair <quint16, QString> fr, bool status) {
+    QByteArray outArray;
+    BytesReaderWriter out(&outArray, QIODevice::WriteOnly);
+    out.setVersion(QDataStream::Qt_4_5);
+    out << quint16(ServerCommands::ADD_USER_BY_ID);
+    quint16 dialogId = addUser(myId, fr, status);
+    out << quint16(fr.first) << quint16(dialogId) << fr.second << status;
+    out.confirm();
+    return outArray;
+}
+
+QByteArray ChatServer::addUserByLogin(quint16 myId, std::pair <quint16, QString> fr, bool status) {
+    QByteArray outArray;
+    BytesReaderWriter out(&outArray, QIODevice::WriteOnly);
+    out.setVersion(QDataStream::Qt_4_5);
+    out << quint16(ServerCommands::ADD_USER_BY_LOGIN);
+    quint16 dialogId = addUser(myId, fr, status);
+    out << quint16(fr.first) << quint16(dialogId) << fr.second << status;
     out.confirm();
     return outArray;
 }
@@ -243,14 +239,18 @@ void ChatServer::changeStatus(quint16 myId, quint16 frId, bool status) {
                arg(myId).arg(status).arg(frId));
 }
 
-QByteArray ChatServer::youAddedInUserlist(quint16 myId) {
-    QByteArray outArray;
-    BytesReaderWriter out(&outArray, QIODevice::WriteOnly);
-    out.setVersion(QDataStream::Qt_4_5);
-    out << quint16(ServerCommands::YOU_ADDED_IN_USERLIST);
-    out << quint16(myId);
-    out.confirm();
-    return outArray;
+void ChatServer::youAddedInUserlist(std::pair <quint16, QString> me, quint16 frId) {
+    if (online.isOnline(frId)) {
+        QByteArray outArray;
+        BytesReaderWriter out(&outArray, QIODevice::WriteOnly);
+        out.setVersion(QDataStream::Qt_4_5);
+        out << quint16(ServerCommands::YOU_ADDED_IN_USERLIST);
+        out << quint16(me.first) << me.second;
+        out.confirm();
+        sendToClient(online.socket(frId), outArray);
+    } else {
+        //notification TODO
+    }
 }
 
 QByteArray ChatServer::loadHistory(quint16 dialogId) {
@@ -265,6 +265,7 @@ QByteArray ChatServer::loadHistory(quint16 dialogId) {
     for (int i = 0; i < members.size(); ++i) {
         QSqlQuery query(QSqlDatabase::database(NAME_OF_CONNECTION_TO_DATABASE));
         query.exec(QString("SELECT pseudonym FROM users WHERE id=%1;").arg(members[i]));
+        qDebug() << "LOAD HISTORY QUERY " << query.size();
         query.next();
         pseuds.push_back(query.value(0).toString());
     }
@@ -292,6 +293,51 @@ QByteArray ChatServer::loadHistory(quint16 dialogId) {
     //members_dialogs: dialog_id, members[i1, i2, ...]
 }
 
+QByteArray ChatServer::registerUser(const QString& userLogin, const QString &pseud, const QString &pass) {
+    QByteArray outArray;
+    BytesReaderWriter out(&outArray, QIODevice::WriteOnly);
+    out.setVersion(QDataStream::Qt_4_5);
+    out << quint16(ServerCommands::REGISTER_USER);
+
+    QSqlQuery query(QSqlDatabase::database(NAME_OF_CONNECTION_TO_DATABASE));
+    query.exec(QString("SELECT * FROM users WHERE user_login ='%1';").arg(userLogin));
+    qDebug() << query.size();
+    if (query.size() == 1) {
+        out << quint16(0);
+        out.confirm();
+        return outArray;
+    }
+
+    query.exec(QString("INSERT INTO users (user_login, user_password, time_reg, pseudonym) VALUE('%1', '%2', '%3', '%4');").
+               arg(userLogin).arg(pass).arg(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss")).arg(pseud));
+    qDebug() << query.lastError();
+    query.exec(QString("SELECT id FROM users WHERE user_login = '%1';").arg(userLogin));
+    query.next();
+    quint16 numberOfUser = query.value(0).toInt();
+    qDebug() << numberOfUser;
+    query.exec(QString("CREATE TABLE userlist_user%1 ("
+               "`friend_id` integer not null primary key,"
+               "`dialog_id` integer not null unique key,"
+               "`is_friend` bool not null);").arg(numberOfUser));
+
+    out << quint16(numberOfUser);
+    out.confirm();
+    return outArray;
+
+}
+
+QByteArray ChatServer::findUser(const QString& log) {
+    QByteArray outArray;
+    BytesReaderWriter out(&outArray, QIODevice::WriteOnly);
+    out.setVersion(QDataStream::Qt_4_5);
+    out << quint16(ServerCommands::FIND_USER);
+    std::pair <quint16, QString> us = userId(log);
+    qDebug() << "find user = " << us.first << endl;
+    out << quint16(us.first) << us.second;
+    out.confirm();
+    return outArray;
+}
+
 //END OF COMMANDS @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
 
@@ -309,6 +355,8 @@ void ChatServer::slotNewConnection() {
 
 void ChatServer::slotDisconnectedClient() {//TODO
     QTcpSocket *pClientSocket = (QTcpSocket*)sender();
+    int idus = online.idUser(pClientSocket);
+    pTEMessage->append(QString("Logoff %1").arg(userId(idus).second));
     online.remove(pClientSocket);
 }
 
@@ -351,15 +399,21 @@ void ChatServer::slotReadClient() {
             quint16 myId, frId;
             bool status;
             in >> myId >> frId >> status;
-            sendToClient(pClientSocket, addUserById(myId, frId, status));
+            std::pair <quint16, QString> fr = userId(frId);
+            std::pair <quint16, QString> me = userId(myId);
+            qDebug() << "ADD FRIEND " << myId << frId << status;
+            sendToClient(pClientSocket, addUserById(myId, fr, status));
+            if (status) youAddedInUserlist(me, fr.first);
             return;
         } else if (typeOfCommand == ServerCommands::ADD_USER_BY_LOGIN) {
-            QString log;
+            QString logFr;
             quint16 myId;
             bool status;
-            in >> myId >> log >> status;
-            sendToClient(pClientSocket, addUserByLogin(myId, log, status));
-            sendToClient(pClientSocket, youAddedInUserlist(myId));
+            in >> myId >> logFr >> status;
+            std::pair <quint16, QString> fr = userId(logFr);
+            std::pair <quint16, QString> me = userId(myId);
+            sendToClient(pClientSocket, addUserByLogin(myId, fr, status));
+            if (status) youAddedInUserlist(me, fr.first);
             return;
         } else if (typeOfCommand == ServerCommands::CHANGE_STATUS) {
             quint16 myId, frId;
@@ -373,14 +427,44 @@ void ChatServer::slotReadClient() {
             qDebug() << "load history " << dialogId;
             sendToClient(pClientSocket, loadHistory(dialogId));
             return;
+        } else if (typeOfCommand == ServerCommands::REGISTER_USER) {
+            QString userLogin, pseud, pass;
+            in >> userLogin >> pseud >> pass;
+            sendToClient(pClientSocket, registerUser(userLogin, pseud, pass));
+            return;
+        } else if (typeOfCommand == ServerCommands::FIND_USER) {
+            QString log;
+            in >> log;
+            sendToClient(pClientSocket, findUser(log));
+            return;
         }
     }
 }
 
 void ChatServer::sendToClient(QTcpSocket *pClientSock, const QByteArray& bytearray) {
-    qDebug() << "send to client " << pClientSock << endl;
     //pTEMessage->append("Authentication -> Send answer." + QString("%1").arg(bytearray.size()));
     pClientSock->write(bytearray);
+}
+
+std::pair <quint16, QString> ChatServer::userId(const QString& log) {
+    QSqlQuery query(QSqlDatabase::database(NAME_OF_CONNECTION_TO_DATABASE));
+    query.exec(QString("SELECT id, pseudonym FROM users WHERE user_login='%1';").arg(log));
+    if (query.size() == 0)
+        return std::make_pair(0, "");
+    query.next();
+    quint16 frId = query.value(0).toInt();
+    QString pseud = query.value(1).toString();
+    return std::make_pair(frId, pseud);
+}
+
+std::pair <quint16, QString> ChatServer::userId(quint16 id) {
+    QSqlQuery query(QSqlDatabase::database(NAME_OF_CONNECTION_TO_DATABASE));
+    query.exec(QString("SELECT pseudonym FROM users WHERE id='%1';").arg(id));
+    if (query.size() == 0)
+        return std::make_pair(0, "");
+    query.next();
+    QString pseud = query.value(0).toString();
+    return std::make_pair(id, pseud);
 }
 
 //END OF THE INTERFACE ==============================================================================

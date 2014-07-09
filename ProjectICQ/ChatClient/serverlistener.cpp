@@ -2,14 +2,13 @@
 
 ServerListener::ServerListener(QTcpSocket *socket):sizeOfBlock(0), fullStreamRecieved(false) {
     pSocket = socket;
-    connect(pSocket, SIGNAL(readyRead()), this, SLOT(slotReadServer()));
+    connect(socket, SIGNAL(readyRead()), this, SLOT(slotReadServer()));
 }
 
 void ServerListener::slotReadServer() {//read from the server
     qDebug() << "read from the server";
     BytesReaderWriter in(pSocket);
     in.setVersion(QDataStream::Qt_4_5);
-    fullStreamRecieved = false;
     for (;;) {
         if (!sizeOfBlock) {
             if (pSocket->bytesAvailable() < sizeof(quint16))
@@ -24,21 +23,16 @@ void ServerListener::slotReadServer() {//read from the server
         quint16 typeOfCommand;
         in >> typeOfCommand;
         qDebug() << "typeOfCommand = " << typeOfCommand;
-        if (typeOfCommand == ServerCommands::SEND_MESSAGE) {
-            quint16 dg, from;
-            QDateTime sendTime;
-            QString content;
-            in >> dg >> from >> sendTime >> content;
-            emit messageRecieved(dg, from, sendTime, content);
-        } else if (typeOfCommand == ServerCommands::YOU_ADDED_IN_USERLIST) {
-            quint16 userId;
-            in >> userId;
-            emit youAddedInUserlist(userId);
-        } else if (typeOfCommand == ServerCommands::LOAD_USERLIST) {
+        if (typeOfCommand == ServerCommands::AUTH) {//Qt::Que
+            quint16 status, userId;
+            QString pseud, msg;
+            in >> status >> userId >> pseud >> msg;
+            emit tryAuthenticate(status, userId, pseud, msg);
+       } else if (typeOfCommand == ServerCommands::LOAD_USERLIST) {//stoped
             quint16 numberOfFriends;
             QVector <User*> us;
             in >> numberOfFriends;
-            qDebug() << "load userlist in listener " << numberOfFriends << endl;
+            qDebug() << "load userlist in listener " << numberOfFriends;
             for (int i = 0; i < numberOfFriends; ++i) {
                 int uid, did;
                 QString pseud;
@@ -47,18 +41,7 @@ void ServerListener::slotReadServer() {//read from the server
                 us.push_back(new User(uid, did, pseud, isfr));
             }
             emit userlistRecieved(us);
-        } else if (typeOfCommand == ServerCommands::ADD_USER_BY_ID) {
-            quint16 frId, dialog;
-            QString pseud;
-            in >> frId >> dialog >> pseud;
-            emit userAdded(frId, dialog, pseud, 0);
-        } else if (typeOfCommand == ServerCommands::ADD_USER_BY_LOGIN) {
-            quint16 frId, dialog;
-            QString pseud;
-            in >> frId >> dialog >> pseud;
-            bool status;
-            emit userAdded(frId, dialog, pseud, status);
-        } else if (typeOfCommand == ServerCommands::LOAD_HISTORY) {
+        } else if (typeOfCommand == ServerCommands::LOAD_HISTORY) {//stoped
             quint16 numberOfMessages, numbersOfUserIdDialog;
             in >> numbersOfUserIdDialog;
             QVector <Message*> history;
@@ -79,21 +62,52 @@ void ServerListener::slotReadServer() {//read from the server
                 history.push_back(new Message(id, fromId, pseuds[fromId], sendTime, content));
             }
             emit historyRecieved(history);
+        } else if (typeOfCommand == ServerCommands::SEND_MESSAGE) {//Qued
+            quint16 dg, from;
+            QDateTime sendTime;
+            QString content;
+            in >> dg >> from >> sendTime >> content;
+            emit messageRecieved(dg, from, sendTime, content);
+        } else if (typeOfCommand == ServerCommands::YOU_ADDED_IN_USERLIST) {//Qued
+            quint16 userId;
+            QString pseud;
+            in >> userId >> pseud;
+            emit youAddedInUserlist(userId, pseud);
+        } else if (typeOfCommand == ServerCommands::ADD_USER_BY_ID) {//Qued
+            quint16 frId, dialog;
+            QString pseud;
+            bool status;
+            in >> frId >> dialog >> pseud >> status;
+            emit userAddedById(frId, dialog, pseud, status);
+        } else if (typeOfCommand == ServerCommands::ADD_USER_BY_LOGIN) {//Qued
+            quint16 frId, dialog;
+            QString pseud;
+            bool status;
+            in >> frId >> dialog >> pseud >> status;
+            emit userAddedByLogin(frId, dialog, pseud, status);
+        } else if (typeOfCommand == ServerCommands::REGISTER_USER) {//stoped
+            quint16 userId;
+            in >> userId;
+            qDebug() << "userId in listener = " << userId;
+            emit tryRegister(userId);
+        } else if (typeOfCommand == ServerCommands::FIND_USER) {
+            quint16 userId;
+            QString pseud;
+            in >> userId >> pseud;
+            emit foundUser(userId, pseud);
         }
     }
-    qDebug() << sizeOfBlock;
 }
 
 
 bool ServerListener::waitFullStream(int mills) {
     qDebug() << "wait full stream";
-    bool ret = false;
-    while (!fullStreamRecieved && pSocket->waitForReadyRead(mills)) {
-        qDebug() << "innnnn wait";
-        slotReadServer();
-        if (fullStreamRecieved)
-            ret = true;
-    }
     fullStreamRecieved = false;
+    while (pSocket->waitForReadyRead(mills) && !fullStreamRecieved) {
+        qDebug() << "innnnn wait";
+    }
+    bool ret = fullStreamRecieved;
+    fullStreamRecieved = false;
+    qDebug() << "exit from wait full stream\n";
     return ret;
 }

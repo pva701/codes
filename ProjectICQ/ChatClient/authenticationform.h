@@ -15,35 +15,37 @@
 #include "../common/bytesreaderwriter.h"
 #include "../common/serverflags.h"
 #include "../common/servercommands.h"
+#include "clientsocket.h"
+#include "registrationform.h"
 
 class AuthenticationForm : public QWidget
 {
     Q_OBJECT
-public:
-    explicit AuthenticationForm(QTcpSocket *socket, const QString& host, int port, QWidget *parent = 0);
+
     QLabel *lblLogin;
     QLineEdit *teLogin;
     QLabel *lblPassword;
     QLineEdit *tePassword;
-    QTcpSocket *pSocket;
+    RegistrationForm *regForm;
+
+    ClientSocket *pSocket;
     quint16 sizeOfBlock;
     QString host;
     int port;
     void keyPressEvent(QKeyEvent *e);
-
-    void sendToServer(const QByteArray& bytearray);
-    void statusAuth(quint16 status, int userId, const QString& userLogin, const QString& msg);
-    //~AuthenticationForm();
+    void closeEvent(QCloseEvent *e);
+public:
+    AuthenticationForm(ClientSocket *socket, const QString& host, int port, QWidget *parent = 0);
+    ~AuthenticationForm();
 signals:
-    void authenticated(int, QString);
-    void unsupportedCommand();
+    void authenticated(quint16, const QString&);
 private slots:
     void slotLogin();
-    void slotReadFromServer();
+    void slotRegisterFormOpen();
     void slotError(QAbstractSocket::SocketError err);
     void slotDisconnected();
-
-public slots:
+    void slotClosedRegForm();
+    void slotRegistered(quint16 userId, const QString& pseud);
 };
 
 #endif // AUTHENTICATIONFORM_H
