@@ -5,8 +5,10 @@
 
 Dialog::Dialog():QListWidgetItem() {}
 
-Dialog::Dialog(quint16 numDialogg, QString namee):QListWidgetItem(namee), numDialog(numDialogg), tittle(namee), tabWidget(NULL), teHistory(NULL), teMessage(NULL) {
+Dialog::Dialog(quint16 numDialogg, QString namee):QListWidgetItem(namee), numDialog(numDialogg),
+    tittle(namee), tabWidget(NULL), teHistory(NULL), teMessage(NULL), unreadMessage(0) {
     setFlags(Qt::ItemIsDragEnabled | Qt::ItemIsEnabled);
+    setFont(QFont(QFont().defaultFamily(), 15, QFont::Light, false));
 }
 
 quint16 Dialog::dialog() const {
@@ -38,4 +40,28 @@ void Dialog::createWidget() {
     spl->addWidget(teHistory);
     spl->addWidget(teMessage);
     tabWidget = spl;
+}
+
+void Dialog::setUnreadMessage(int x) {
+    if (x == 0)
+        setText(name());
+    else {
+        int w = listWidget()->visualItemRect(this).width();
+        if (w > 300) w /= 2.5;
+        QFontMetrics me(font());
+        int wName = me.width(name());
+        QString t = QString("+%1").arg(x);
+        int wMess = me.width(t);
+        int cntSpaces = (w - wName - wMess) /  me.width(' ');
+        QString res = name();
+        for (int i = 1; i <= cntSpaces; ++i)
+            res += " ";
+        res += t;
+        setText(res);
+    }
+    unreadMessage = x;
+}
+
+int Dialog::unread() {
+    return unreadMessage;
 }

@@ -1,29 +1,19 @@
 #ifndef NOTIFICATION_H
 #define NOTIFICATION_H
 
-#include <QDialog>
-#include <QLabel>
-#include <QVBoxLayout>
-#include <QPushButton>
-#include "user.h"
+#include <QMap>
+#include <QVariant>
+#include <QVector>
 
-class Notification : public QDialog
+class Notification
 {
-    Q_OBJECT
-
-    quint16 userId;
-    QString pseud;
+    int tp;
 public:
-    explicit Notification(quint16 id, const QString& pseud, QWidget *parent = 0);
-    
-signals:
-    void yes(User us);
-    void write(User us);
-    void no();
-private slots:
-    void slotYes();
-    void slotWrite();
-    void slotNo();
+    Notification();
+    Notification(int tpp);
+    QMap <int, QVariant> field;
+    int type();
+    static QVector <Notification*> convert(const QVector <Notification>& ar);
 };
 
 #endif // NOTIFICATION_H

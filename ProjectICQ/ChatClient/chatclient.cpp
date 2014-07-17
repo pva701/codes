@@ -1,6 +1,7 @@
 #include "chatclient.h"
 
-ChatClient::ChatClient(ClientSocket *sockett, const QString& strHost, int nPort, int userIdx, const QString& pseud, QWidget *pwig):QWidget(pwig), userlist(new UserListWidget()), dialogFindFriends(NULL) {
+ChatClient::ChatClient(ClientSocket *sockett, const QString& strHost, int nPort, int userIdx, const QString& pseud, QWidget *pwig):QWidget(pwig),
+    userlist(new UserListWidget()), dialogFindFriends(NULL) {
     qDebug() << "chat client\n";
     pSocket = sockett;
 
@@ -40,8 +41,9 @@ ChatClient::ChatClient(ClientSocket *sockett, const QString& strHost, int nPort,
     //listOfFriends->setIconSize(QSize(48, 48));
     userlist->setSelectionMode(QAbstractItemView::SingleSelection);
     userlist->add(pSocket->loadUserlist(myId));
+    notifs = Notification::convert(pSocket->loadNotifys(myId));
 
-    connect(userlist, SIGNAL(doubleClickUser(Dialog*)), this, SLOT(slotDoubleClickedUserlistItem(Dialog*)));
+    connect(userlist, SIGNAL(doubleClickUser(Dialog*)), this, SLOT(slotDoubleClickDialog(Dialog*)));
     //pItem1->setBackgroundColor(QColor(255, 0, 0));
     //pItem1->setFlags(Qt::ItemIsDragEnabled | Qt::ItemIsEnabled | Qt::ItemIsSelectable);
 
@@ -60,6 +62,16 @@ ChatClient::ChatClient(ClientSocket *sockett, const QString& strHost, int nPort,
     connect(pSocket->listener(), SIGNAL(youAddedInUserlist(quint16, QString)), this, SLOT(slotYouAreAddedInUserlist(quint16, QString)), Qt::QueuedConnection);
     connect(pSocket->listener(), SIGNAL(notifyOnOff(quint16,bool)), this, SLOT(slotNotifyOnOff(quint16, bool)));
     connect(pSocket->socket(), SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(slotError(QAbstractSocket::SocketError)));
+
+    showNotifications(notifs);
+}
+
+void ChatClient::showNotifications(const QVector <Notification*>& nt) {
+    for (int i = 0; i < notifs.size(); ++i)
+        if (notifs[i]->type() == ServerFlags::RequestAddToFriends)
+            slotYouAreAddedInUserlist(notifs[i]->field[1].toInt(), notifs[i]->field[2].toString());
+        else if (notifs[i]->type() == ServerFlags::UnreadMessages)
+            userlist->userByDialog(notifs[i]->field[1].toInt())->setUnreadMessage(notifs[i]->field[2].toInt());
 }
 
 void ChatClient::slotError(QAbstractSocket::SocketError err) {
@@ -67,6 +79,7 @@ void ChatClient::slotError(QAbstractSocket::SocketError err) {
                                err == QAbstractSocket::RemoteHostClosedError ? "The remote host is closed." :
                                err == QAbstractSocket::ConnectionRefusedError ? "The connection was refused." :
                                                                                 QString(pSocket->socket()->errorString()));
+    qDebug() << "INNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN ERROR";
     QMessageBox::critical(this, "ConnectionError", msg);
     //pTEInfo->append(msg); TODO
 }
@@ -74,27 +87,36 @@ void ChatClient::slotError(QAbstractSocket::SocketError err) {
 void ChatClient::slotPrepareSendMessage() {
     if (activeDialog->message()->toPlainText() == "")
         return;
+    appendHistory(activeDialog, "You", pSocket->talker()->currentDateTimeFromServer(), activeDialog->message()->toPlainText());
     pSocket->talker()->sendMessage(activeDialog->dialog(), myId, pSocket->talker()->currentDateTimeFromServer(), activeDialog->message()->toPlainText());
+    //activeDialog->history()->append(activeDialog->message()->toPlainText());////wrong
     activeDialog->message()->clear();
 }
 
 void ChatClient::slotMessageRecieved(quint16 dialogNum, quint16 fromId, QDateTime sendTime, const QString &message) {
     Dialog *dg = userlist->userByDialog(dialogNum);
-    if (dg == NULL) {//not found
-        User us = pSocket->addUserById(myId, fromId, false);
-        userlist->add(new User(us));
+    if (dg == activeDialog) {
+        QString name = (fromId == myId ? "You" : dg->name());
+        appendHistory(dg, name, sendTime, message);
+        pSocket->talker()->readMessageNotify(myId, dg->dialog());
+        return;
     }
 
-    createTab(dg);
+    if (dg == NULL) {//not found
+        User us = pSocket->addUserById(myId, fromId, ServerFlags::InUserlist);
+        userlist->add(new User(us));
+    }
+    createDialog(dg);
+    dg->setUnreadMessage(dg->unread() + 1);
     QString name = (fromId == myId ? "You" : dg->name());
-    //qDebug() << dg->history()->document()->lastBlock().text() << " <> " << name + " (" + sendTime.toString("dd-MM-yyyy hh:mm:ss") + "): " + message;
-    if (dg->history()->document()->lastBlock().text() != name + " (" + sendTime.toString("dd-MM-yyyy hh:mm:ss") + "): " + message)
-        dg->history()->append(name + " (" + sendTime.toString("dd-MM-yyyy hh:mm:ss") + "): " + message);
+    appendHistory(dg, name, sendTime, message);
 }
 
-void ChatClient::slotDoubleClickedUserlistItem(Dialog *dg) {
-    createTab(dg);
+void ChatClient::slotDoubleClickDialog(Dialog *dg) {
+    createDialog(dg);
     activateTab(dg);
+    dg->setUnreadMessage(0);
+    pSocket->talker()->readMessageNotify(myId, dg->dialog());
 }
 
 void ChatClient::slotTabClosed(int tab) {
@@ -105,38 +127,37 @@ void ChatClient::slotCurrentTabChanged(int newTab) {
     if (newTab == -1) {
         pButSend->setEnabled(false);
         activeDialog = NULL;
-    } else
+    } else {
         activeDialog = userlist->userByWidget(tbwDialogs->widget(newTab));
+        activeDialog->setUnreadMessage(0);
+        pSocket->talker()->readMessageNotify(myId, activeDialog->dialog());
+    }
 }
 
-void ChatClient::createTab(Dialog *dg) {
-    pButSend->setEnabled(true);
-    for (int i = 0; i < tbwDialogs->count(); ++i)
-        if (tbwDialogs->widget(i) == dg->widget())
-            return;
-    if (dg->widget() != NULL) {
-        tbwDialogs->addTab(dg->widget(), dg->name());
+void ChatClient::createDialog(Dialog *dg) {
+    if (dg->widget() != NULL)
         return;
-    }
     dg->createWidget();
     QVector <Message*> history = Message::convert(pSocket->loadHistory(dg));
-    for (int i = 0; i < history.size(); ++i)
-        if (history[i]->from() == myId)
-            dg->history()->append("You (" + history[i]->time().toString("dd-MM-yyyy hh:mm:ss") + "): " + history[i]->message());
-        else
-            dg->history()->append(history[i]->pseudonym() + " (" + history[i]->time().toString("dd-MM-yyyy hh:mm:ss") + "): " + history[i]->message());
+    for (int i = 0; i < history.size(); ++i) {
+        QString name = (history[i]->from() == myId ? "You" : dg->name());
+        appendHistory(dg, name, history[i]->time(), history[i]->message());
+    }
     for (int i = 0; i < history.size(); ++i)
         delete history[i];
-    tbwDialogs->addTab(dg->widget(), dg->name());
+    //tbwDialogs->addTab(dg->widget(), dg->name());
 }
 
 void ChatClient::activateTab(Dialog *dg) {
+    pButSend->setEnabled(true);
     activeDialog = dg;
     for (int i = 0; i < tbwDialogs->count(); ++i)
-        if (tbwDialogs->widget(i)->children().contains(dg->history())) {
+        if (tbwDialogs->widget(i) == dg->widget()) {
             tbwDialogs->setCurrentIndex(i);
             return;
         }
+    tbwDialogs->addTab(dg->widget(), dg->name());
+    tbwDialogs->setCurrentIndex(tbwDialogs->count() - 1);
 }
 
 
@@ -145,10 +166,10 @@ void ChatClient::slotYouAreAddedInUserlist(quint16 frId, const QString& pseud) {
         return;
 
     //newFriend = User(frId, 0, pseud, 0, 0);
-    Notification *notAdd = new Notification(frId, pseud, this);
+    NotificationForm *notAdd = new NotificationForm(frId, pseud, this);
     connect(notAdd, SIGNAL(yes(User)), this, SLOT(slotAddFriend(User)));
     connect(notAdd, SIGNAL(write(User)), this, SLOT(slotWriteToFriend(User)));
-    connect(notAdd, SIGNAL(no()), this, SLOT(slotNoAddFriend()));
+    connect(notAdd, SIGNAL(no(User)), this, SLOT(slotNoAddFriend(User)));
     notAdd->show();
     //where wrong
 }
@@ -186,13 +207,13 @@ void ChatClient::slotFindFriend(const QString& name) {
 
 
 void ChatClient::slotAddFriend(User us) {
-    User fr = pSocket->addUserById(myId, us.id(), true);
+    User fr = pSocket->addUserById(myId, us.id(), ServerFlags::Friend);
     userlist->add(new User(fr));
     dialogFindFriends->close();
 }
 
 void ChatClient::slotWriteToFriend(User us) {
-    User fr = pSocket->addUserById(myId, us.id(), false);
+    User fr = pSocket->addUserById(myId, us.id(), ServerFlags::InUserlist);
     Dialog *dg = userlist->userById(us.id());
 
     if (dg == NULL) {
@@ -201,14 +222,15 @@ void ChatClient::slotWriteToFriend(User us) {
         dg = addUs;
     }
 
-    createTab(dg);
+    createDialog(dg);
     activateTab(dg);
     dialogFindFriends->close();
 }
 
-void ChatClient::slotNoAddFriend() {
-    Notification *send = (Notification*)sender();
+void ChatClient::slotNoAddFriend(User us) {
+    NotificationForm *send = (NotificationForm*)sender();
     send->close();
+    pSocket->addUserById(myId, us.id(), ServerFlags::Discard);
 }
 
 
@@ -216,6 +238,11 @@ void ChatClient::slotNotifyOnOff(quint16 userId, bool stat) {
     User *us = userlist->userById(userId);
     us->setOnline(stat);
     userlist->updateStatus(us);
+}
+
+void ChatClient::appendHistory(Dialog* dg, const QString& name, const QDateTime& sendTime, const QString& message) {
+    if (dg->history()->document()->lastBlock().text() != name + " (" + sendTime.toString("dd-MM-yyyy hh:mm:ss") + "): " + message)
+        dg->history()->append(name + " (" + sendTime.toString("dd-MM-yyyy hh:mm:ss") + "): " + message);
 }
 
 ChatClient::~ChatClient() {

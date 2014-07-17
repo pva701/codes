@@ -1,7 +1,7 @@
 #include <QtGui/QApplication>
 #include "chatclientform.h"
 const int PORT = 2323;
-const QString HOST = "188.120.238.32";//"lalkachat.ru";
+const QString HOST = "127.0.0.1"; //"188.120.238.32";
 
 /*
 clientinfodb

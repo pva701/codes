@@ -1,6 +1,8 @@
 #include "servertalker.h"
 
 ServerTalker::ServerTalker(QTcpSocket *socket):pSocket(socket), sizeOfBlock(0) {
+    startDate = QDateTime::currentDateTime();
+    counter.start();
 }
 
 void ServerTalker::sendToServer(const QByteArray& bytearray) {//send to the server
@@ -18,7 +20,7 @@ void ServerTalker::sendMessage(quint16 dialog, quint16 myId, QDateTime sendTime,
 }
 
 QDateTime ServerTalker::currentDateTimeFromServer() {
-    return QDateTime::currentDateTime();
+    return startDate.addMSecs(counter.elapsed());
 }
 
 void ServerTalker::changeStatus(quint16 myId, quint16 frId, bool status) {
@@ -27,6 +29,17 @@ void ServerTalker::changeStatus(quint16 myId, quint16 frId, bool status) {
     out.setVersion(QDataStream::Qt_4_5);
     out << quint16(ServerCommands::CHANGE_STATUS_FRIEND);
     out << quint16(myId) << quint16(frId) << status;
+    out.confirm();
+    sendToServer(outArray);
+}
+
+
+void ServerTalker::readMessageNotify(int myId, int dialog) {
+    QByteArray outArray;
+    BytesReaderWriter out(&outArray, QIODevice::WriteOnly);
+    out.setVersion(QDataStream::Qt_4_5);
+    out << quint16(ServerCommands::READ_MESSAGE_NOTIFY);
+    out << myId << dialog;
     out.confirm();
     sendToServer(outArray);
 }

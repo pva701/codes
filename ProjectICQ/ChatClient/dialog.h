@@ -12,6 +12,7 @@ protected:
     quint16 numDialog;
     QString tittle;
     QWidget *tabWidget;
+    int unreadMessage;
 public:
     Dialog();
     Dialog(quint16 numDialogg, QString namee);
@@ -21,7 +22,8 @@ public:
     QTextEdit* message() const;
     QWidget* widget() const;
     void createWidget();
-
+    void setUnreadMessage(int x);
+    int unread();
 };
 
 #endif // DIALOG_H

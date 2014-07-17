@@ -23,11 +23,11 @@ SOURCES += \
     usersonline.cpp \
     main.cpp \
     chatserver.cpp \
-    common/bytesreaderwriter.cpp
+    ../common/bytesreaderwriter.cpp
 
 HEADERS += \
     usersonline.h \
     chatserver.h \
-    common/serverflags.h \
-    common/servercommands.h \
-    common/bytesreaderwriter.h
+    ../common/serverflags.h \
+    ../common/servercommands.h \
+    ../common/bytesreaderwriter.h

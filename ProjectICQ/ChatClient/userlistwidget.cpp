@@ -86,13 +86,9 @@ void UserListWidget::updateStatus(User *us) {
     for (int i = 0; i < frnds.size(); ++i)
         if (frnds[i] == us)
             oldi = i;
-    //qDebug() << "oldi = " << oldi;
     int i = oldi;
     for (;i > 0 && cmpr(frnds[i], frnds[i - 1]); --i)
         qSwap(frnds[i], frnds[i - 1]);
-    //qDebug() << "MY = " << frnds[i]->isFriend() << " " << frnds[i]->isOnline();
-   // qDebug() << "HE = " << frnds[i + 1]->isFriend() << " " << frnds[i + 1]->isOnline();
-    //qDebug() << "COMPARE = " << (frnds[i + 1] < frnds[i]);
     for (; i + 1 < frnds.size() && cmpr(frnds[i + 1], frnds[i]); ++i)
         qSwap(frnds[i], frnds[i + 1]);
     takeItem(oldi);

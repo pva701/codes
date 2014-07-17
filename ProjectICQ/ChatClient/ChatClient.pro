@@ -24,8 +24,9 @@ SOURCES += \
     registrationform.cpp \
     chatclientform.cpp \
     dialogfindfriends.cpp \
-    notification.cpp \
-    userlistwidget.cpp
+    userlistwidget.cpp \
+    notificationform.cpp \
+    notification.cpp
 
 HEADERS  += \
     user.h \
@@ -42,6 +43,7 @@ HEADERS  += \
     registrationform.h \
     chatclientform.h \
     dialogfindfriends.h \
-    notification.h \
-    userlistwidget.h
+    userlistwidget.h \
+    notificationform.h \
+    notification.h
 

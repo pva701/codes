@@ -15,7 +15,8 @@ class ServerTalker:public QObject
 private:
     QTcpSocket *pSocket;
     quint16 sizeOfBlock;
-
+    QDateTime startDate;
+    QTime counter;
 public:
     ServerTalker(QTcpSocket *socket);
 
@@ -28,7 +29,7 @@ public:
     QDateTime currentDateTimeFromServer();
     void sendMessage(quint16 dialog, quint16 myId, QDateTime sendTime, const QString& message);
     void changeStatus(quint16 myId, quint16 frId, bool status);
-
+    void readMessageNotify(int myId, int dialog);
 };
 
 #endif // SERVERTALKER_H

@@ -10,9 +10,9 @@
 #include <QtSql/QSqlDatabase>
 #include <QtSql/QSqlQuery>
 #include <QtSql/QSqlError>
-#include "common/bytesreaderwriter.h"
-#include "common/serverflags.h"
-#include "common/servercommands.h"
+#include "../common/bytesreaderwriter.h"
+#include "../common/serverflags.h"
+#include "../common/servercommands.h"
 #include "usersonline.h"
 #include <cstdio>
 #include <QtPlugin>
@@ -40,24 +40,26 @@ private:
     void insertIntoDatabaseMessage(quint16 dialog, quint16 fromId, QDateTime sendTime, const QString& content);
     QVector <quint16> membersOfDialog(quint16 dialog);
     QVector <QTcpSocket*> onlineMembersOfDialog(quint16 dialog);
-    void notifyOnOff(quint16 userId, ServerFlags::NotificationType);
-    std::pair <quint16, QString> userId(const QString& log);
-    std::pair <quint16, QString> userId(quint16 id);
+    void notifyOnOff(quint16 userId, ServerFlags::StatusType);
+    std::pair <quint16, QString> userDescribe(const QString& log);
+    std::pair <quint16, QString> userDescribe(quint16 id);
 
     //commands
     QByteArray login(const QString& userLogin, const QString& userPassword, QTcpSocket *socket);
     QByteArray loadUserlist(int userId);
     void sendMessage(quint16 dialog, quint16 fromId, QDateTime sendTime, const QString& content);
-    QByteArray addUserById(quint16 myId, std::pair <quint16, QString> fr, bool status);
-    QByteArray addUserByLogin(quint16 myId, std::pair <quint16, QString> fr, bool status);
+    QByteArray addUserById(quint16 myId, std::pair <quint16, QString> fr, int status);
+    QByteArray addUserByLogin(quint16 myId, std::pair <quint16, QString> fr, int status);
     void changeStatus(quint16 userId, quint16 frId, bool status);
     void youAddedInUserlist(std::pair <quint16, QString> me, quint16 frId);
     QByteArray loadHistory(quint16 dialogId);
     QByteArray registerUser(const QString& userLogin, const QString& pseud, const QString& pass, QTcpSocket *socket);
     void sendToClient(QTcpSocket *pSock, const QByteArray& s);
-    quint16 addUser(quint16 myId, std::pair <quint16, QString> fr, bool status);
+    quint16 addUser(quint16 myId, std::pair <quint16, QString> fr, int status);
     QByteArray findUser(const QString& log);
-    QByteArray notify(quint16 userId, ServerFlags::NotificationType flag);
+    QByteArray notify(quint16 userId, ServerFlags::StatusType flag);
+    QByteArray loadNotifys(int userId);
+    void readMessageNotify(int usId, int dialog);
 private slots:
     void slotConnectionClient();
     void slotDisconnectedClient();

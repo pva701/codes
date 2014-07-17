@@ -47,32 +47,51 @@ void ClientSocket::slotUserlistRecieved(const QVector <User>& us) {
     fakeUserlist = us;
 }
 
-User ClientSocket::addUserById(quint16 mid, quint16 fid, bool status) {
+QVector <Notification> ClientSocket::loadNotifys(int myId) {
+    QByteArray outArray;
+    BytesReaderWriter out(&outArray, QIODevice::WriteOnly);
+    out.setVersion(QDataStream::Qt_4_5);
+    out << quint16(ServerCommands::LOAD_NOTIFYS);
+    out << myId;
+    out.confirm();
+    //qRegisteredMetaType
+    connect(listenerx, SIGNAL(notifysRecieved(QVector<Notification>)), this, SLOT(sloNotifysRecieved(QVector<Notification>)));
+    talkerx->sendToServer(outArray);
+    //new thread
+    listenerx->waitFullStream(INTERVAL_LOAD_NOTIFYS);
+    return fakeNotifys;
+}
+
+void ClientSocket::sloNotifysRecieved(const QVector<Notification>& notf) {
+    fakeNotifys = notf;
+}
+
+User ClientSocket::addUserById(quint16 mid, quint16 fid, int status) {
     QByteArray outArray;
     BytesReaderWriter out(&outArray, QIODevice::WriteOnly);
     out.setVersion(QDataStream::Qt_4_5);
     out << quint16(ServerCommands::ADD_USER_BY_ID);
     out << quint16(mid) << quint16(fid) << status;
     out.confirm();
-    connect(listenerx, SIGNAL(userAddedById(quint16,quint16,QString, bool, bool)), this, SLOT(slotUserAdded(quint16,quint16,QString, bool, bool)));
+    connect(listenerx, SIGNAL(userAddedById(quint16,quint16,QString, int, bool)), this, SLOT(slotUserAdded(quint16,quint16,QString, int, bool)));
     talkerx->sendToServer(outArray);
     //new thread
     listenerx->waitFullStream(INTERVAL_ADD_USER);
     return fakeUser;
 }
 
-void ClientSocket::slotUserAdded(quint16 mid, quint16 did, const QString& pseud, bool status, bool isOn) {
+void ClientSocket::slotUserAdded(quint16 mid, quint16 did, const QString& pseud, int status, bool isOn) {
     fakeUser = User(mid, did, pseud, status, isOn);
 }
 
-User ClientSocket::addUserByLogin(quint16 myId, const QString& log, bool status) {
+User ClientSocket::addUserByLogin(quint16 myId, const QString& log, int status) {
     QByteArray outArray;
     BytesReaderWriter out(&outArray, QIODevice::WriteOnly);
     out.setVersion(QDataStream::Qt_4_5);
     out << quint16(ServerCommands::ADD_USER_BY_LOGIN);
     out << myId << log << status;
     out.confirm();
-    connect(listenerx, SIGNAL(userAddedByLogin(quint16,quint16,QString, bool)), this, SLOT(slotUserAdded(quint16,quint16,QString, bool)), Qt::QueuedConnection);
+    connect(listenerx, SIGNAL(userAddedByLogin(quint16,quint16,QString, int, bool)), this, SLOT(slotUserAdded(quint16,quint16,QString, int, bool)), Qt::QueuedConnection);
     talkerx->sendToServer(outArray);
     //new thread
     listenerx->waitFullStream(INTERVAL_ADD_USER);

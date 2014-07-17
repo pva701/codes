@@ -7,6 +7,7 @@
 #include "serverlistener.h"
 #include "servertalker.h"
 #include "../common/serverflags.h"
+#include "notification.h"
 
 class ClientSocket:public QObject
 {
@@ -17,6 +18,7 @@ private:
     static const int INTERVAL_ADD_USER = 2000;
     static const int INTERVAL_LOAD_HISTORY = 2000;
     static const int INTERVAL_REGISTER_USER = 2000;
+    static const int INTERVAL_LOAD_NOTIFYS = 2000;
 
     User fakeUser;
     QVector <Message> fakeHistory;
@@ -25,6 +27,7 @@ private:
     quint16 fakeStatus;
     QString fakePseud;
     QString fakeMsg;
+    QVector <Notification> fakeNotifys;
 
     ServerListener *listenerx;
     ServerTalker *talkerx;
@@ -35,11 +38,12 @@ public:
     void authenticate(const QString& log, const QString& pass, quint16& status, quint16& userId,
                       QString& pseud, QString& msg);
     QVector <User> loadUserlist(quint16 myId);
-    User addUserById(quint16 mid, quint16 fid, bool status);
-    User addUserByLogin(quint16 myId, const QString& log, bool status);
+    User addUserById(quint16 mid, quint16 fid, int status);
+    User addUserByLogin(quint16 myId, const QString& log, int status);
     QVector <Message> loadHistory(Dialog *dg);
     quint16 registerUser(const QString& log, const QString& pseud, const QString& pass);
     User findUser(const QString& log);
+    QVector <Notification> loadNotifys(int userId);
 
     QTcpSocket *socket();
     ServerListener* listener();
@@ -48,12 +52,13 @@ public:
     ~ClientSocket();
 private slots:
     void slotUserlistRecieved(const QVector <User>& us);
-    void slotUserAdded(quint16 mid, quint16 did, const QString& pseud, bool status, bool isOn);
+    void slotUserAdded(quint16 mid, quint16 did, const QString& pseud, int status, bool isOn);
     void slotHistoryRecieved(const QVector<Message> &hs);
     void slotTryRegistered(quint16 userId);
     void slotAuthentificated(quint16 status, quint16 userId,
                              const QString& pseud, const QString& msg);
     void slotFoundUser(quint16 userId, const QString& pseud, bool isOn);
+    void sloNotifysRecieved(const QVector<Notification>& nf);
 };
 
 #endif // CLIENTSOCKET_H

@@ -25,7 +25,6 @@ public:
     void setOnline(bool stat);
     bool operator < (const User& other) const;
 
-    friend class UserListWidget;
 signals:
     void changedStatus();
 };

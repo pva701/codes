@@ -20,7 +20,7 @@ QTcpSocket* UsersOnline::socket(int userId) {
     return NULL;
 }
 
-quint16 UsersOnline::idUser(QTcpSocket *sock) {
+quint16 UsersOnline::userId(QTcpSocket *sock) {
     return sockets[sock];
 }
 
@@ -32,6 +32,6 @@ void UsersOnline::remove(QTcpSocket *socket) {
     sockets.erase(socket);
 }
 
-int UsersOnline::usersOnline() {
+int UsersOnline::countUsersOnline() {
     return users.size();
 }

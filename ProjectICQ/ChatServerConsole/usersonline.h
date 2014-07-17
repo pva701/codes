@@ -12,8 +12,8 @@ public:
     bool isOnline(int userId);
     QTcpSocket *socket(int userId);
     void remove(QTcpSocket *socket);
-    int usersOnline();
-    quint16 idUser(QTcpSocket *sock);
+    int countUsersOnline();
+    quint16 userId(QTcpSocket *sock);
 };
 
 #endif // USERSONLINE_H

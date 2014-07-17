@@ -1,5 +1,7 @@
 #include "serverlistener.h"
 
+#include "notification.h"
+
 ServerListener::ServerListener(QTcpSocket *socket):sizeOfBlock(0), fullStreamRecieved(false) {
     pSocket = socket;
     connect(socket, SIGNAL(readyRead()), this, SLOT(slotReadServer()));
@@ -77,13 +79,15 @@ void ServerListener::slotReadServer() {//read from the server
         } else if (typeOfCommand == ServerCommands::ADD_USER_BY_ID) {//Qued
             quint16 frId, dialog;
             QString pseud;
-            bool status, isOn;
+            int status;
+            bool isOn;
             in >> frId >> dialog >> pseud >> status >> isOn;
             emit userAddedById(frId, dialog, pseud, status, isOn);
         } else if (typeOfCommand == ServerCommands::ADD_USER_BY_LOGIN) {//Qued
             quint16 frId, dialog;
             QString pseud;
-            bool status, isOn;
+            int status;
+            bool isOn;
             in >> frId >> dialog >> pseud >> status >> isOn;
             emit userAddedByLogin(frId, dialog, pseud, status, isOn);
         } else if (typeOfCommand == ServerCommands::REGISTER_USER) {//stoped
@@ -101,6 +105,28 @@ void ServerListener::slotReadServer() {//read from the server
             quint16 userId, stat;
             in >> userId >> stat;
             emit notifyOnOff(userId, stat);
+        } else if (typeOfCommand == ServerCommands::LOAD_NOTIFYS) {
+            int size;
+            in >> size;
+            QVector <Notification> res;
+            for (int i = 0; i < size; ++i) {
+                int type;
+                in >> type;
+                res.push_back(Notification(type));
+                if (type == ServerFlags::RequestAddToFriends) {
+                    int id;
+                    QString pseud;
+                    in >> id >> pseud;
+                    res.back().field[1] = id;
+                    res.back().field[2] = pseud;
+                } else if (type == ServerFlags::UnreadMessages) {
+                    int dialId, cnt;
+                    in >> dialId >> cnt;
+                    res.back().field[1] = dialId;
+                    res.back().field[2] = cnt;
+                }
+            }
+            emit notifysRecieved(res);
         }
     }
 }
