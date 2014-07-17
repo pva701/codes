@@ -21,3 +21,10 @@ QDateTime Message::time() {
 QString Message::message() {
     return content;
 }
+
+QVector <Message*> Message::convert(const QVector <Message>& hs) {
+    QVector <Message*> res;
+    for (int i = 0; i < hs.size(); ++i)
+        res.push_back(new Message(hs[i]));
+    return res;
+}

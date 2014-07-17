@@ -1,8 +1,9 @@
 #ifndef DIALOG_H
 #define DIALOG_H
 #include <QListWidgetItem>
+#include <QListWidget>
 #include <QTextEdit>
-class Dialog
+class Dialog: public QListWidgetItem
 {
 protected:
     QListWidgetItem *item;
@@ -14,16 +15,12 @@ protected:
 public:
     Dialog();
     Dialog(quint16 numDialogg, QString namee);
-    QListWidgetItem* pointerToItem();
-    QString name();
-    quint16 dialog();
-    void setListWidgetItem(QListWidgetItem* ptr);
-    void setTEHistory(QTextEdit *te);
-    void setTEMessage(QTextEdit *te);
-    QTextEdit* history();
-    QTextEdit* message();
-    QWidget* widget();
-    void setWidget(QWidget *wid);
+    QString name() const;
+    quint16 dialog() const;
+    QTextEdit* history() const;
+    QTextEdit* message() const;
+    QWidget* widget() const;
+    void createWidget();
 
 };
 

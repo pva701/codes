@@ -13,7 +13,6 @@ TEMPLATE = app
 SOURCES += \
     user.cpp \
     main.cpp \
-    chatclientwidget.cpp \
     chatclient.cpp \
     authenticationform.cpp \
     ../common/bytesreaderwriter.cpp \
@@ -22,12 +21,15 @@ SOURCES += \
     servertalker.cpp \
     message.cpp \
     clientsocket.cpp \
-    registrationform.cpp
+    registrationform.cpp \
+    chatclientform.cpp \
+    dialogfindfriends.cpp \
+    notification.cpp \
+    userlistwidget.cpp
 
 HEADERS  += \
     user.h \
     dialog.h \
-    chatclientwidget.h \
     chatclient.h \
     authenticationform.h \
     ../common/bytesreaderwriter.h \
@@ -37,5 +39,9 @@ HEADERS  += \
     servertalker.h \
     message.h \
     clientsocket.h \
-    registrationform.h
+    registrationform.h \
+    chatclientform.h \
+    dialogfindfriends.h \
+    notification.h \
+    userlistwidget.h
 

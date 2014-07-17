@@ -1,12 +1,12 @@
 #include "registrationform.h"
 
-RegistrationForm::RegistrationForm(ClientSocket *socket, QWidget *parent):QWidget(parent) {
+RegistrationForm::RegistrationForm(ClientSocket *socket, QWidget *parent):QDialog(parent) {
     pSocket = socket;
     setWindowTitle("Registration");
     QRect sizeOfMonitor = QApplication::desktop()->screenGeometry();
     const QSize sizeOfWindow = QSize(300, 200);
-    const QRect positonOfWindow = QRect(sizeOfMonitor.width() / 2 - sizeOfWindow.width() / 2 - 100, 100, sizeOfWindow.width(), sizeOfWindow.height());
-    setGeometry(positonOfWindow);
+    //const QRect positonOfWindow = QRect(sizeOfMonitor.width() / 2 - sizeOfWindow.width() / 2 - 100, 100, sizeOfWindow.width(), sizeOfWindow.height());
+    //setGeometry(positonOfWindow);
 
     lblPseud = new QLabel("Pseudonym:", this);
     tePseudonym = new QLineEdit(this);
@@ -30,18 +30,22 @@ RegistrationForm::RegistrationForm(ClientSocket *socket, QWidget *parent):QWidge
     lyt->addWidget(teConfPasswordReg);
     lyt->addWidget(butRegisterSubmit);
     setLayout(lyt);
-    show();
+    setFixedSize(lyt->sizeHint());
 
     connect(butRegisterSubmit, SIGNAL(clicked()), this, SLOT(slotRegister()));
     //connect(pSocket->listener(), SIGNAL(tryRegister(quint16)), this, SLOT(slotStatusRegistration(quint16)), Qt::QueuedConnection);
 }
 
 void RegistrationForm::closeEvent(QCloseEvent *e) {
+    tePseudonym->clear();
+    teLoginReg->clear();
+    tePasswordReg->clear();
+    teConfPasswordReg->clear();
     emit closed();
 }
 
 void RegistrationForm::keyPressEvent(QKeyEvent *e) {
-    if (e->key() == Qt::Key_Return)
+    if (e->key() == Qt::Key_Return || e->key() == Qt::Key_Enter)
         slotRegister();
 }
 

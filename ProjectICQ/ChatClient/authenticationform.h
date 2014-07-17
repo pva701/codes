@@ -33,7 +33,6 @@ class AuthenticationForm : public QWidget
     QString host;
     int port;
     void keyPressEvent(QKeyEvent *e);
-    void closeEvent(QCloseEvent *e);
 public:
     AuthenticationForm(ClientSocket *socket, const QString& host, int port, QWidget *parent = 0);
     ~AuthenticationForm();
@@ -43,7 +42,6 @@ private slots:
     void slotLogin();
     void slotRegisterFormOpen();
     void slotError(QAbstractSocket::SocketError err);
-    void slotDisconnected();
     void slotClosedRegForm();
     void slotRegistered(quint16 userId, const QString& pseud);
 };

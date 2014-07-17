@@ -25,7 +25,7 @@ void ServerTalker::changeStatus(quint16 myId, quint16 frId, bool status) {
     QByteArray outArray;
     BytesReaderWriter out(&outArray, QIODevice::WriteOnly);
     out.setVersion(QDataStream::Qt_4_5);
-    out << quint16(ServerCommands::CHANGE_STATUS);
+    out << quint16(ServerCommands::CHANGE_STATUS_FRIEND);
     out << quint16(myId) << quint16(frId) << status;
     out.confirm();
     sendToServer(outArray);

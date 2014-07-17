@@ -2,6 +2,7 @@
 #define MESSAGE_H
 
 #include <QDateTime>
+#include <QVector>
 
 class Message
 {
@@ -18,6 +19,7 @@ public:
     QDateTime time();
     QString message();
 
+    static QVector <Message*> convert(const QVector <Message>& hs);
 };
 
 #endif // MESSAGE_H

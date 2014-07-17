@@ -11,8 +11,9 @@
 #include <QKeyEvent>
 #include <QMessageBox>
 #include "clientsocket.h"
+#include <QDialog>
 
-class RegistrationForm:public QWidget
+class RegistrationForm:public QDialog
 {
     Q_OBJECT
 

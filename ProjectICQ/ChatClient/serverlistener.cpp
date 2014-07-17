@@ -27,24 +27,25 @@ void ServerListener::slotReadServer() {//read from the server
             quint16 status, userId;
             QString pseud, msg;
             in >> status >> userId >> pseud >> msg;
+            qDebug() << "auth\n";
             emit tryAuthenticate(status, userId, pseud, msg);
        } else if (typeOfCommand == ServerCommands::LOAD_USERLIST) {//stoped
             quint16 numberOfFriends;
-            QVector <User*> us;
+            QVector <User> us;
             in >> numberOfFriends;
             qDebug() << "load userlist in listener " << numberOfFriends;
             for (int i = 0; i < numberOfFriends; ++i) {
                 int uid, did;
                 QString pseud;
-                bool isfr;
-                in >> uid >> did >> pseud >> isfr;
-                us.push_back(new User(uid, did, pseud, isfr));
+                bool isfr, stat;
+                in >> uid >> did >> pseud >> isfr >> stat;
+                us.push_back(User(uid, did, pseud, isfr, stat));
             }
             emit userlistRecieved(us);
         } else if (typeOfCommand == ServerCommands::LOAD_HISTORY) {//stoped
             quint16 numberOfMessages, numbersOfUserIdDialog;
             in >> numbersOfUserIdDialog;
-            QVector <Message*> history;
+            QVector <Message> history;
             std::map <quint16, QString> pseuds;
             for (int i = 0; i < numbersOfUserIdDialog; ++i) {
                 quint16 id;
@@ -59,7 +60,7 @@ void ServerListener::slotReadServer() {//read from the server
                 QString content;
                 QDateTime sendTime;
                 in >> id >> fromId >> sendTime >> content;
-                history.push_back(new Message(id, fromId, pseuds[fromId], sendTime, content));
+                history.push_back(Message(id, fromId, pseuds[fromId], sendTime, content));
             }
             emit historyRecieved(history);
         } else if (typeOfCommand == ServerCommands::SEND_MESSAGE) {//Qued
@@ -76,15 +77,15 @@ void ServerListener::slotReadServer() {//read from the server
         } else if (typeOfCommand == ServerCommands::ADD_USER_BY_ID) {//Qued
             quint16 frId, dialog;
             QString pseud;
-            bool status;
-            in >> frId >> dialog >> pseud >> status;
-            emit userAddedById(frId, dialog, pseud, status);
+            bool status, isOn;
+            in >> frId >> dialog >> pseud >> status >> isOn;
+            emit userAddedById(frId, dialog, pseud, status, isOn);
         } else if (typeOfCommand == ServerCommands::ADD_USER_BY_LOGIN) {//Qued
             quint16 frId, dialog;
             QString pseud;
-            bool status;
-            in >> frId >> dialog >> pseud >> status;
-            emit userAddedByLogin(frId, dialog, pseud, status);
+            bool status, isOn;
+            in >> frId >> dialog >> pseud >> status >> isOn;
+            emit userAddedByLogin(frId, dialog, pseud, status, isOn);
         } else if (typeOfCommand == ServerCommands::REGISTER_USER) {//stoped
             quint16 userId;
             in >> userId;
@@ -93,8 +94,13 @@ void ServerListener::slotReadServer() {//read from the server
         } else if (typeOfCommand == ServerCommands::FIND_USER) {
             quint16 userId;
             QString pseud;
-            in >> userId >> pseud;
-            emit foundUser(userId, pseud);
+            bool isOn;
+            in >> userId >> pseud >> isOn;
+            emit foundUser(userId, pseud, isOn);
+        } else if (typeOfCommand == ServerCommands::NOTIFY_ON_OFF) {
+            quint16 userId, stat;
+            in >> userId >> stat;
+            emit notifyOnOff(userId, stat);
         }
     }
 }

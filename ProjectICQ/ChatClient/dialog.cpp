@@ -1,45 +1,41 @@
 #include "dialog.h"
 
-Dialog::Dialog() {}
+#include <QDebug>
+#include <QSplitter>
 
-Dialog::Dialog(quint16 numDialogg, QString namee): numDialog(numDialogg), tittle(namee), tabWidget(NULL), teHistory(NULL), teMessage(NULL) {}
+Dialog::Dialog():QListWidgetItem() {}
 
-quint16 Dialog::dialog() {
+Dialog::Dialog(quint16 numDialogg, QString namee):QListWidgetItem(namee), numDialog(numDialogg), tittle(namee), tabWidget(NULL), teHistory(NULL), teMessage(NULL) {
+    setFlags(Qt::ItemIsDragEnabled | Qt::ItemIsEnabled);
+}
+
+quint16 Dialog::dialog() const {
     return numDialog;
 }
 
-QListWidgetItem* Dialog::pointerToItem() {
-    return item;
-}
 
-QString Dialog::name() {
+QString Dialog::name() const {
     return tittle;
 }
 
-void Dialog::setListWidgetItem(QListWidgetItem* ptr) {
-    item = ptr;
-}
-
-void Dialog::setTEHistory(QTextEdit *te) {
-    teHistory = te;
-}
-
-void Dialog::setTEMessage(QTextEdit *te) {
-    teMessage = te;
-}
-
-QTextEdit* Dialog::history() {
+QTextEdit* Dialog::history() const {
     return teHistory;
 }
 
-QTextEdit* Dialog::message() {
+QTextEdit* Dialog::message() const {
     return teMessage;
 }
 
-void Dialog::setWidget(QWidget *w) {
-    tabWidget = w;
+QWidget* Dialog::widget() const {
+    return tabWidget;
 }
 
-QWidget* Dialog::widget() {
-    return tabWidget;
+void Dialog::createWidget() {
+    QSplitter *spl = new QSplitter(Qt::Vertical);
+    teHistory = new QTextEdit();
+    teMessage = new QTextEdit(new QTextEdit());
+    teHistory->setReadOnly(true);
+    spl->addWidget(teHistory);
+    spl->addWidget(teMessage);
+    tabWidget = spl;
 }

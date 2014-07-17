@@ -1,0 +1,13 @@
+Important notice of Qt Copyrights
+
+
+Nokia has assigned all Qt copyrights and trademarks to Digia Plc and/or its subsidiaries. This includes all copyrights of former Troll Tech AS/ASA.
+
+
+All other copyrights belong to their respective owners. 
+
+
+All packages reflect the copyright owners of the time they have been created.
+
+
+Please refer to qt-project.org/legal for more information.

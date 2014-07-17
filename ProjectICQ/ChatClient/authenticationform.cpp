@@ -1,8 +1,9 @@
 #include "authenticationform.h"
 
-AuthenticationForm::AuthenticationForm(ClientSocket *socket, const QString& hostx, int portx, QWidget *parent /*= 0*/):QWidget(parent), sizeOfBlock(0), host(hostx), port(portx) {
+AuthenticationForm::AuthenticationForm(ClientSocket *socket, const QString& hostx, int portx, QWidget *parent /*= 0*/):QWidget(parent), sizeOfBlock(0), host(hostx), port(portx), regForm(NULL) {
     setWindowTitle("Authentication");
     setWindowFlags(Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowCloseButtonHint | Qt::WindowMinimizeButtonHint);
+    //setAttribute(Qt::WA_DeleteOnClose);
     QRect sizeOfMonitor = QApplication::desktop()->screenGeometry();
     const QSize sizeOfWindow = QSize(300, 200);
     const QRect positonOfWindow = QRect(sizeOfMonitor.width() / 2 - sizeOfWindow.width() / 2, 100, sizeOfWindow.width(), sizeOfWindow.height());
@@ -49,32 +50,33 @@ void AuthenticationForm::slotLogin() {
     if (status == ServerFlags::Success_Auth)
         emit authenticated(userId, pseud);
     else if (status == ServerFlags::CE_Database)
-        QMessageBox::critical(0, "ConnectionError", msg);
+        QMessageBox::critical(this, "ConnectionError", msg);
     else if (status == ServerFlags::AE_Wrong_Login)
-        QMessageBox::critical(0, "AuthenticationError", "Wrong login! Try again.");
+        QMessageBox::critical(this, "AuthenticationError", "Wrong login! Try again.");
     else if (status == ServerFlags::AE_Wrong_Password)
-       QMessageBox::critical(0, "AuthenticationError", "Wrong password! Try again.");
+       QMessageBox::critical(this, "AuthenticationError", "Wrong password! Try again.");
+    else if (status == ServerFlags::Time_Out)
+        QMessageBox::critical(this, "ConnectionError", "Expired connection time");
 }
 
 void AuthenticationForm::slotRegisterFormOpen() {
     setEnabled(false);
-    regForm = new RegistrationForm(pSocket);
-    connect(regForm, SIGNAL(registered(quint16,QString)), this, SLOT(slotRegistered(quint16,QString)), Qt::QueuedConnection);
-    regForm->show();
-    connect(regForm, SIGNAL(closed()), this, SLOT(slotClosedRegForm()));
+    if (regForm == NULL) {
+        regForm = new RegistrationForm(pSocket, this);
+        connect(regForm, SIGNAL(registered(quint16,QString)), this, SLOT(slotRegistered(quint16,QString)), Qt::QueuedConnection);
+        regForm->show();
+        connect(regForm, SIGNAL(closed()), this, SLOT(slotClosedRegForm()));
+    } else
+        regForm->show();
 }
 
 void AuthenticationForm::slotClosedRegForm() {
     setEnabled(true);
-    delete regForm;
 }
 
-void AuthenticationForm::closeEvent(QCloseEvent *e) {
-    delete regForm;
-}
 
 void AuthenticationForm::slotRegistered(quint16 userId, const QString& pseud) {
-    delete regForm;
+    regForm->close();
     emit authenticated(userId, pseud);
 }
 
@@ -83,16 +85,16 @@ void AuthenticationForm::slotError(QAbstractSocket::SocketError err) {
                                err == QAbstractSocket::RemoteHostClosedError ? "The remote host is closed." :
                                err == QAbstractSocket::ConnectionRefusedError ? "The connection was refused." :
                                                                                 QString(pSocket->socket()->errorString()));
-    QMessageBox::critical(0, "ConnectionError", msg);
-}
-
-void AuthenticationForm::slotDisconnected() {
+    QMessageBox::critical(this, "ConnectionError", msg);
 }
 
 
 void AuthenticationForm::keyPressEvent(QKeyEvent *e) {
-    if (e->key() == Qt::Key_Return)
+    if (e->key() == Qt::Key_Return || e->key() == Qt::Key_Enter)
         slotLogin();
 }
 
-AuthenticationForm::~AuthenticationForm() {}
+AuthenticationForm::~AuthenticationForm() {
+    if (regForm != NULL)
+        delete regForm;
+}

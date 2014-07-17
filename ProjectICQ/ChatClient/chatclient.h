@@ -24,15 +24,18 @@
 #include "clientsocket.h"
 #include <QLineEdit>
 #include <QTextBlock>
+#include <QInputDialog>
+#include "dialogfindfriends.h"
+#include "notification.h"
+#include "userlistwidget.h"
 
 class ChatClient:public QWidget
 {
     Q_OBJECT
 
     QTabWidget *tbwDialogs;
-    QListWidget *lwOfFriends;
+    UserListWidget *userlist;
 
-    QVector <User*> userlist;
     Dialog *activeDialog;
     quint16 myId;
     QString pseudonym;
@@ -41,17 +44,10 @@ class ChatClient:public QWidget
     QPushButton *pButSend;
     QPushButton *pButFind;
 
-
-    QWidget *informationAboutFriend;
-    QLabel *inftext;
-    QLineEdit *leFriendLogin;
-    QPushButton *butYes;
-    QPushButton *butWrite;
-    QPushButton *butNo;
-    User newFriend;
+    DialogFindFriends *dialogFindFriends;
 public:
     ChatClient(ClientSocket *socket, const QString& strHost, int nPort, int idUserx, const QString& pseud, QWidget *pwig = 0);
-
+    ~ChatClient();
 private:
     void createTab(Dialog *dg);
     void activateTab(Dialog *dg);
@@ -62,16 +58,17 @@ private slots:
     //void slotUserAdded(quint16 mid, quint16 did, const QString& pseud, bool status);
     //void slotHistoryRecieved(const QVector<Message*>& hs);
     void slotMessageRecieved(quint16 dialogNum, quint16 fromId, QDateTime sendTime, const QString& message);
-    void slotYouAddedInUserlist(quint16 frId, const QString& pseud);
+    void slotYouAreAddedInUserlist(quint16 frId, const QString& pseud);
 
-    void slotDoubleClickedUserlistItem(QListWidgetItem*);
+    void slotDoubleClickedUserlistItem(Dialog*);
     void slotTabClosed(int);
     void slotCurrentTabChanged(int);
-    void slotFindFriends();
-    void slotFindFriend();
-    void slotAddFriend();
+    void slotFindFriendsOpen();
+    void slotFindFriend(const QString& name);
+    void slotAddFriend(User);
     void slotNoAddFriend();
-    void slotWriteToFriend();
+    void slotWriteToFriend(User);
+    void slotNotifyOnOff(quint16, bool flag);
     //void slotOverrideKeyPress(QKeyEvent *e);
 };
 
