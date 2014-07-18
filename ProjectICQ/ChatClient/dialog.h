@@ -3,12 +3,14 @@
 #include <QListWidgetItem>
 #include <QListWidget>
 #include <QTextEdit>
+#include "texteditmessage.h"
+
 class Dialog: public QListWidgetItem
 {
 protected:
     QListWidgetItem *item;
     QTextEdit *teHistory;
-    QTextEdit *teMessage;
+    TextEditMessage *teMessage;
     quint16 numDialog;
     QString tittle;
     QWidget *tabWidget;

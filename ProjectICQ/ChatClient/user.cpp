@@ -27,13 +27,22 @@ bool User::isFriend() {
     return isFr;
 }
 
+void User::setFriend(bool status) {
+    if (status == isFr)
+        return;
+    isFr = status;
+    setOnline(isOn);
+}
+
 bool User::isOnline() {
     return isOn;
 }
 
 void User::setOnline(bool status) {
     isOn = status;
-    if (status)
+    if (!isFr)
+        setForeground(OUT_USERLIST_COLOR);
+    else if (status)
         setForeground(ONLINE_COLOR);
     else
         setForeground(OFFLINE_COLOR);

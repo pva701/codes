@@ -15,8 +15,6 @@
 #include "../common/servercommands.h"
 #include "usersonline.h"
 #include <cstdio>
-#include <QtPlugin>
-//Q_IMPORT_PLUGIN(qsqlmysql)
 
 class ChatServer:public QObject
 {
@@ -48,17 +46,16 @@ private:
     QByteArray login(const QString& userLogin, const QString& userPassword, QTcpSocket *socket);
     QByteArray loadUserlist(int userId);
     void sendMessage(quint16 dialog, quint16 fromId, QDateTime sendTime, const QString& content);
-    QByteArray addUserById(quint16 myId, std::pair <quint16, QString> fr, int status);
-    QByteArray addUserByLogin(quint16 myId, std::pair <quint16, QString> fr, int status);
-    void changeStatus(quint16 userId, quint16 frId, bool status);
+    void changeStatus(quint16 userId, quint16 frId, int status);
     void youAddedInUserlist(std::pair <quint16, QString> me, quint16 frId);
     QByteArray loadHistory(quint16 dialogId);
     QByteArray registerUser(const QString& userLogin, const QString& pseud, const QString& pass, QTcpSocket *socket);
     void sendToClient(QTcpSocket *pSock, const QByteArray& s);
-    quint16 addUser(quint16 myId, std::pair <quint16, QString> fr, int status);
+    QByteArray addUser(quint16 myId, std::pair <quint16, QString> fr, int status, int typeAdd);
     QByteArray findUser(const QString& log);
     QByteArray notify(quint16 userId, ServerFlags::StatusType flag);
     QByteArray loadNotifys(int userId);
+    QByteArray currentDateTime();
     void readMessageNotify(int usId, int dialog);
 private slots:
     void slotConnectionClient();

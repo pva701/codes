@@ -5,10 +5,11 @@
 
 Dialog::Dialog():QListWidgetItem() {}
 
-Dialog::Dialog(quint16 numDialogg, QString namee):QListWidgetItem(namee), numDialog(numDialogg),
-    tittle(namee), tabWidget(NULL), teHistory(NULL), teMessage(NULL), unreadMessage(0) {
+Dialog::Dialog(quint16 numDialogg, QString namee):QListWidgetItem(namee), teHistory(NULL), teMessage(NULL),
+    numDialog(numDialogg), tittle(namee), tabWidget(NULL), unreadMessage(0) {
     setFlags(Qt::ItemIsDragEnabled | Qt::ItemIsEnabled);
     setFont(QFont(QFont().defaultFamily(), 15, QFont::Light, false));
+    font().setFixedPitch(true);
 }
 
 quint16 Dialog::dialog() const {
@@ -35,7 +36,7 @@ QWidget* Dialog::widget() const {
 void Dialog::createWidget() {
     QSplitter *spl = new QSplitter(Qt::Vertical);
     teHistory = new QTextEdit();
-    teMessage = new QTextEdit(new QTextEdit());
+    teMessage = new TextEditMessage();
     teHistory->setReadOnly(true);
     spl->addWidget(teHistory);
     spl->addWidget(teMessage);

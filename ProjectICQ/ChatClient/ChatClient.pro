@@ -26,7 +26,8 @@ SOURCES += \
     dialogfindfriends.cpp \
     userlistwidget.cpp \
     notificationform.cpp \
-    notification.cpp
+    notification.cpp \
+    texteditmessage.cpp
 
 HEADERS  += \
     user.h \
@@ -45,5 +46,6 @@ HEADERS  += \
     dialogfindfriends.h \
     userlistwidget.h \
     notificationform.h \
-    notification.h
+    notification.h \
+    texteditmessage.h
 

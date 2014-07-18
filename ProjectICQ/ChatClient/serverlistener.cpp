@@ -76,20 +76,15 @@ void ServerListener::slotReadServer() {//read from the server
             QString pseud;
             in >> userId >> pseud;
             emit youAddedInUserlist(userId, pseud);
-        } else if (typeOfCommand == ServerCommands::ADD_USER_BY_ID) {//Qued
+        } else if (typeOfCommand == ServerCommands::ADD_USER_BY_ID ||
+                   typeOfCommand == ServerCommands::ADD_USER_BY_LOGIN ||
+                   typeOfCommand == ServerCommands::ADD_USER_BY_DIALOG) {//Qued
             quint16 frId, dialog;
             QString pseud;
             int status;
             bool isOn;
             in >> frId >> dialog >> pseud >> status >> isOn;
-            emit userAddedById(frId, dialog, pseud, status, isOn);
-        } else if (typeOfCommand == ServerCommands::ADD_USER_BY_LOGIN) {//Qued
-            quint16 frId, dialog;
-            QString pseud;
-            int status;
-            bool isOn;
-            in >> frId >> dialog >> pseud >> status >> isOn;
-            emit userAddedByLogin(frId, dialog, pseud, status, isOn);
+            emit userAdded(frId, dialog, pseud, status, isOn);
         } else if (typeOfCommand == ServerCommands::REGISTER_USER) {//stoped
             quint16 userId;
             in >> userId;
@@ -127,6 +122,10 @@ void ServerListener::slotReadServer() {//read from the server
                 }
             }
             emit notifysRecieved(res);
+        } else if (typeOfCommand == ServerCommands::TIME_SERVER) {
+            QDateTime cur;
+            in >> cur;
+            emit dateTimeFromServer(cur);
         }
     }
 }

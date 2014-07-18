@@ -14,7 +14,6 @@ ChatClient::ChatClient(ClientSocket *sockett, const QString& strHost, int nPort,
     connect(dialogFindFriends, SIGNAL(add(User)), this, SLOT(slotAddFriend(User)));
     connect(dialogFindFriends, SIGNAL(write(User)), this, SLOT(slotWriteToFriend(User)));
 
-
     setWindowTitle("FriendlyChatClient");
 
     pButSend = new QPushButton("&Send", this);
@@ -63,15 +62,25 @@ ChatClient::ChatClient(ClientSocket *sockett, const QString& strHost, int nPort,
     connect(pSocket->listener(), SIGNAL(notifyOnOff(quint16,bool)), this, SLOT(slotNotifyOnOff(quint16, bool)));
     connect(pSocket->socket(), SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(slotError(QAbstractSocket::SocketError)));
 
-    showNotifications(notifs);
+    pSocket->initDateTime();
+    showNotifications();
 }
 
-void ChatClient::showNotifications(const QVector <Notification*>& nt) {
+void ChatClient::showNotifications() {
+    qDebug() << "show notif";
     for (int i = 0; i < notifs.size(); ++i)
         if (notifs[i]->type() == ServerFlags::RequestAddToFriends)
             slotYouAreAddedInUserlist(notifs[i]->field[1].toInt(), notifs[i]->field[2].toString());
-        else if (notifs[i]->type() == ServerFlags::UnreadMessages)
-            userlist->userByDialog(notifs[i]->field[1].toInt())->setUnreadMessage(notifs[i]->field[2].toInt());
+        else if (notifs[i]->type() == ServerFlags::UnreadMessages) {
+            User *us = userlist->userByDialog(notifs[i]->field[1].toInt());
+            qDebug() << "US = " << us;
+            if (us == NULL) {
+                us = new User(pSocket->addUserByDialog(myId, notifs[i]->field[1].toInt(), ServerFlags::InUserlist));
+                userlist->add(us);
+            }
+            us->setUnreadMessage(notifs[i]->field[2].toInt());
+        }
+        qDebug() << "out fron notif";
 }
 
 void ChatClient::slotError(QAbstractSocket::SocketError err) {
@@ -85,16 +94,21 @@ void ChatClient::slotError(QAbstractSocket::SocketError err) {
 }
 
 void ChatClient::slotPrepareSendMessage() {
-    if (activeDialog->message()->toPlainText() == "")
+    QString txt = activeDialog->message()->toPlainText();
+    int i = txt.size() - 1;
+    while (i >= 0 && txt[i] == ' ') --i;
+    txt.remove(i + 1, txt.size() - i - 1);
+    if (txt == "")
         return;
-    appendHistory(activeDialog, "You", pSocket->talker()->currentDateTimeFromServer(), activeDialog->message()->toPlainText());
-    pSocket->talker()->sendMessage(activeDialog->dialog(), myId, pSocket->talker()->currentDateTimeFromServer(), activeDialog->message()->toPlainText());
+    QDateTime sendTime = pSocket->currentDateTimeFromServer();
+    appendHistory(activeDialog, "You", sendTime, txt);
+    pSocket->talker()->sendMessage(activeDialog->dialog(), myId, sendTime, txt);
     //activeDialog->history()->append(activeDialog->message()->toPlainText());////wrong
     activeDialog->message()->clear();
 }
 
 void ChatClient::slotMessageRecieved(quint16 dialogNum, quint16 fromId, QDateTime sendTime, const QString &message) {
-    Dialog *dg = userlist->userByDialog(dialogNum);
+    Dialog *dg = userlist->userByDialog(dialogNum);////WRONG
     if (dg == activeDialog) {
         QString name = (fromId == myId ? "You" : dg->name());
         appendHistory(dg, name, sendTime, message);
@@ -103,8 +117,9 @@ void ChatClient::slotMessageRecieved(quint16 dialogNum, quint16 fromId, QDateTim
     }
 
     if (dg == NULL) {//not found
-        User us = pSocket->addUserById(myId, fromId, ServerFlags::InUserlist);
-        userlist->add(new User(us));
+        User *us = new User(pSocket->addUserById(myId, fromId, ServerFlags::InUserlist));
+        dg = us;
+        userlist->add(us);
     }
     createDialog(dg);
     dg->setUnreadMessage(dg->unread() + 1);
@@ -138,6 +153,7 @@ void ChatClient::createDialog(Dialog *dg) {
     if (dg->widget() != NULL)
         return;
     dg->createWidget();
+    connect(dg->message(), SIGNAL(enter()), this, SLOT(slotPrepareSendMessage()));
     QVector <Message*> history = Message::convert(pSocket->loadHistory(dg));
     for (int i = 0; i < history.size(); ++i) {
         QString name = (history[i]->from() == myId ? "You" : dg->name());
@@ -160,7 +176,6 @@ void ChatClient::activateTab(Dialog *dg) {
     tbwDialogs->setCurrentIndex(tbwDialogs->count() - 1);
 }
 
-
 void ChatClient::slotYouAreAddedInUserlist(quint16 frId, const QString& pseud) {
     if (userlist->userById(frId) != NULL)
         return;
@@ -180,6 +195,7 @@ void ChatClient::slotFindFriendsOpen() {
 }
 
 void ChatClient::slotFindFriend(const QString& name) {
+    qDebug() << "slot find friend";
     User fndUser = pSocket->findUser(name);
     bool yourFriend = userlist->userById(fndUser.id()) != NULL; //false;
     dialogFindFriends->setFocusUser(fndUser);
@@ -207,6 +223,12 @@ void ChatClient::slotFindFriend(const QString& name) {
 
 
 void ChatClient::slotAddFriend(User us) {
+    User *fndUs = userlist->userById(us.id());
+    if (fndUs != NULL) {
+        pSocket->talker()->changeStatus(myId, us.id(), ServerFlags::Friend);
+        fndUs->setFriend(true);
+        return;
+    }
     User fr = pSocket->addUserById(myId, us.id(), ServerFlags::Friend);
     userlist->add(new User(fr));
     dialogFindFriends->close();
@@ -241,9 +263,20 @@ void ChatClient::slotNotifyOnOff(quint16 userId, bool stat) {
 }
 
 void ChatClient::appendHistory(Dialog* dg, const QString& name, const QDateTime& sendTime, const QString& message) {
-    if (dg->history()->document()->lastBlock().text() != name + " (" + sendTime.toString("dd-MM-yyyy hh:mm:ss") + "): " + message)
-        dg->history()->append(name + " (" + sendTime.toString("dd-MM-yyyy hh:mm:ss") + "): " + message);
+    QString txt = "<b>" + name + "</b> (" + sendTime.toString("dd-MM-yyyy hh:mm:ss") + "): " + message;
+    if (dg->history()->document()->lastBlock().text() != txt)
+        dg->history()->append(txt);
 }
+
+
+//void ChatClient::keyPressEvent(QKeyEvent *e) {
+//    if ((e->key() == Qt::Key_Enter || e->key() == Qt::Key_Return) && (e->modifiers() & Qt::ControlModifier))
+//        return;
+//    if (e->key() == Qt::Key_Enter || e->key() == Qt::Key_Return)
+//        qDebug() << "enter";
+//    else
+//        QWidget::keyPressEvent(e);
+//}
 
 ChatClient::~ChatClient() {
     if (userlist != NULL)

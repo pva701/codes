@@ -23,10 +23,8 @@ public:
     bool isFriend();
     bool isOnline();
     void setOnline(bool stat);
+    void setFriend(bool status);
     bool operator < (const User& other) const;
-
-signals:
-    void changedStatus();
 };
 
 bool cmpr(User *a, User *b);

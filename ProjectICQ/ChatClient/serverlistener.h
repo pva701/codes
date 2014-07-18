@@ -3,7 +3,7 @@
 
 #include <QTcpSocket>
 #include <QString>
-
+#include <QDateTime>
 #include "../common/bytesreaderwriter.h"
 #include "../common/servercommands.h"
 #include "user.h"
@@ -30,11 +30,12 @@ signals:
     void youAddedInUserlist(quint16 frId, const QString& pseud);
     void userlistRecieved(const QVector <User>& us);
     void historyRecieved(const QVector <Message>& hs);
-    void userAddedById(quint16 frId, quint16 dialog, const QString& pseud, int status, bool isOn);
-    void userAddedByLogin(quint16 frId, quint16 dialog, const QString& pseud, int status, bool isOn);
+    void userAdded(quint16 frId, quint16 dialog, const QString& pseud, int status, bool isOn);
+    //void userAddedByLogin(quint16 frId, quint16 dialog, const QString& pseud, int status, bool isOn);
     void foundUser(quint16 userId, const QString& pseud, bool isOn);
     void notifyOnOff(quint16 userId, bool stat);
     void notifysRecieved(const QVector<Notification>& nf);
+    void dateTimeFromServer(QDateTime);
 };
 
 #endif // SERVERLISTENER_H

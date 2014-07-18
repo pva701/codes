@@ -45,13 +45,14 @@ class ChatClient:public QWidget
     QPushButton *pButSend;
     QPushButton *pButFind;
     DialogFindFriends *dialogFindFriends;
+    //void keyPressEvent(QKeyEvent *e);
 public:
     ChatClient(ClientSocket *socket, const QString& strHost, int nPort, int idUserx, const QString& pseud, QWidget *pwig = 0);
     ~ChatClient();
 private:
     void createDialog(Dialog *dg);
     void activateTab(Dialog *dg);
-    void showNotifications(const QVector <Notification*>& nt);
+    void showNotifications();
 private slots:
     void slotError(QAbstractSocket::SocketError);
     void slotPrepareSendMessage();

@@ -2,7 +2,7 @@
 #define BYTESREADERWRITER_H
 #include <QString>
 #include <QTime>
-#include <QTcpSocket>
+#include <QtNetwork/QTcpSocket>
 
 class BytesReaderWriter:public QDataStream
 {

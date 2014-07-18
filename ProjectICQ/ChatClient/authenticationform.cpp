@@ -1,6 +1,7 @@
 #include "authenticationform.h"
 
-AuthenticationForm::AuthenticationForm(ClientSocket *socket, const QString& hostx, int portx, QWidget *parent /*= 0*/):QWidget(parent), sizeOfBlock(0), host(hostx), port(portx), regForm(NULL) {
+AuthenticationForm::AuthenticationForm(ClientSocket *socket, const QString& hostx, int portx, QWidget *parent /*= 0*/):QWidget(parent),
+    regForm(NULL), sizeOfBlock(0), host(hostx), port(portx) {
     setWindowTitle("Authentication");
     setWindowFlags(Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowCloseButtonHint | Qt::WindowMinimizeButtonHint);
     //setAttribute(Qt::WA_DeleteOnClose);
