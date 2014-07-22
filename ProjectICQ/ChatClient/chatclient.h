@@ -53,12 +53,13 @@ private:
     void createDialog(Dialog *dg);
     void activateTab(Dialog *dg);
     void showNotifications();
+    QTextDocument* prepareRecievedMessage(const QString& msg);
+    int metainfoSmile(const QString& s, int pos);
+    //static QTextDocument *toTextDocumentFromString
+    //QString toStringFromTextDocument
 private slots:
     void slotError(QAbstractSocket::SocketError);
     void slotPrepareSendMessage();
-    //void slotUserlistRecieved(const QVector <User*>& us);
-    //void slotUserAdded(quint16 mid, quint16 did, const QString& pseud, bool status);
-    //void slotHistoryRecieved(const QVector<Message*>& hs);
     void slotMessageRecieved(quint16 dialogNum, quint16 fromId, QDateTime sendTime, const QString& message);
     void slotYouAreAddedInUserlist(quint16 frId, const QString& pseud);
 
@@ -67,11 +68,11 @@ private slots:
     void slotCurrentTabChanged(int);
     void slotFindFriendsOpen();
     void slotFindFriend(const QString& name);
-    void slotAddFriend(User);
-    void slotNoAddFriend(User us);
-    void slotWriteToFriend(User);
+    void slotAddFriend(User*);
+    void slotNoAddFriend(User* us);
+    void slotWriteToFriend(User*);
     void slotNotifyOnOff(quint16, bool flag);
-    void appendHistory(Dialog* dg, const QString& name, const QDateTime& sendTime, const QString& message);
+    void appendHistory(Dialog* dg, const QString& name, const QDateTime& sendTime, QTextDocument *document);
     //void slotOverrideKeyPress(QKeyEvent *e);
 };
 

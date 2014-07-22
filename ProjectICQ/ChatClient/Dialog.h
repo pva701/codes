@@ -5,47 +5,37 @@
 #include <QListWidget>
 #include <QTextEdit>
 #include "texteditmessage.h"
-#include <QDialog>
-#include <QSplitter>
-#include <QToolBar>
-#include <QAction>
-#include <QMenu>
 
-class Dialog: public QSplitter, public QListWidgetItem
+class Dialog: public QObject, public QListWidgetItem
 {
     Q_OBJECT
 protected:
     QListWidgetItem *item;
     QTextEdit *teHistory;
-    QToolBar *panel;
     TextEditMessage *teMessage;
     quint16 numDialog;
     QString tittle;
     QWidget *tabWidget;
-    QMenu *smileMenu;
+    QWidget *smileWidget;
     int unreadMessage;
-    bool createdWidgetx;
+
+    static int W_CNT;
+    static int H_CNT;
+    static QImage *smiles;
 public:
-    Dialog(QWidget *parent = 0);
-    Dialog(quint16 numDialogg, QString namee, QWidget *parent = 0);
+    Dialog();
+    Dialog(quint16 numDialogg, QString namee);
     QString name() const;
     quint16 dialog() const;
     QTextEdit* history() const;
     QTextEdit* message() const;
-    QWidget* widget();
+    QWidget* widget() const;
     void createWidget();
-    bool createdWidget();
     void setUnreadMessage(int x);
     int unread();
-    void reloadResource();
-
-    int W_CNT;
-    int H_CNT;
-    QImage *smiles;
-    void loadSmiles();
-private slots:
-    void slotSmilesClicked();
-    void slotClickedSmileMenu();
+    static void loadSmiles();
 };
 
+
 #endif // DIALOG_H
+

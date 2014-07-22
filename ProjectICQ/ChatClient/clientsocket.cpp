@@ -53,7 +53,7 @@ void ClientSocket::authenticate(const QString& log, const QString& pass, quint16
         status = ServerFlags::Time_Out;
 }
 
-QVector<User> ClientSocket::loadUserlist(quint16 myId) {
+QVector<User*> ClientSocket::loadUserlist(quint16 myId) {
     qDebug() << "load userlist";
     QByteArray outArray;
     BytesReaderWriter out(&outArray, QIODevice::WriteOnly);
@@ -62,7 +62,7 @@ QVector<User> ClientSocket::loadUserlist(quint16 myId) {
     out << quint16(myId);
     out.confirm();
     //qRegisteredMetaType
-    connect(listenerx, SIGNAL(userlistRecieved(QVector<User>)), this, SLOT(slotUserlistRecieved(QVector<User>)));
+    connect(listenerx, SIGNAL(userlistRecieved(QVector<User*>)), this, SLOT(slotUserlistRecieved(QVector<User*>)));
     talkerx->sendToServer(outArray);
     //new thread
     listenerx->waitFullStream(INTERVAL_LOAD_USERLIST);
@@ -70,7 +70,7 @@ QVector<User> ClientSocket::loadUserlist(quint16 myId) {
     return fakeUserlist;
 }
 
-void ClientSocket::slotUserlistRecieved(const QVector <User>& us) {
+void ClientSocket::slotUserlistRecieved(const QVector <User*>& us) {
     fakeUserlist = us;
 }
 
@@ -94,10 +94,10 @@ void ClientSocket::sloNotifysRecieved(const QVector<Notification>& notf) {
 }
 
 void ClientSocket::slotUserAdded(quint16 mid, quint16 did, const QString& pseud, int status, bool isOn) {
-    fakeUser = User(mid, did, pseud, status, isOn);
+    fakeUser = new User(mid, did, pseud, status, isOn);
 }
 
-User ClientSocket::addUserById(quint16 mid, quint16 fid, int status) {
+User* ClientSocket::addUserById(quint16 mid, quint16 fid, int status) {
     QByteArray outArray;
     BytesReaderWriter out(&outArray, QIODevice::WriteOnly);
     out.setVersion(QDataStream::Qt_4_5);
@@ -111,7 +111,7 @@ User ClientSocket::addUserById(quint16 mid, quint16 fid, int status) {
     return fakeUser;
 }
 
-User ClientSocket::addUserByLogin(quint16 myId, const QString& log, int status) {
+User* ClientSocket::addUserByLogin(quint16 myId, const QString& log, int status) {
     QByteArray outArray;
     BytesReaderWriter out(&outArray, QIODevice::WriteOnly);
     out.setVersion(QDataStream::Qt_4_5);
@@ -125,7 +125,7 @@ User ClientSocket::addUserByLogin(quint16 myId, const QString& log, int status) 
     return fakeUser;
 }
 
-User ClientSocket::addUserByDialog(quint16 myId, quint16 dial, int status) {
+User* ClientSocket::addUserByDialog(quint16 myId, quint16 dial, int status) {
     QByteArray outArray;
     BytesReaderWriter out(&outArray, QIODevice::WriteOnly);
     out.setVersion(QDataStream::Qt_4_5);
@@ -158,7 +158,7 @@ void ClientSocket::slotHistoryRecieved(const QVector<Message>& hs) {
     fakeHistory = hs;
 }
 
-User ClientSocket::findUser(const QString& log) {
+User* ClientSocket::findUser(const QString& log) {
     QByteArray outArray;
     BytesReaderWriter out(&outArray, QIODevice::WriteOnly);
     out.setVersion(QDataStream::Qt_4_5);
@@ -200,8 +200,7 @@ void ClientSocket::slotAuthentificated(quint16 status, quint16 userId, const QSt
 }
 
 void ClientSocket::slotFoundUser(quint16 userId, const QString &pseud, bool isOn) {
-    qDebug() << "slot FoundedUser";
-    fakeUser = User(userId, 0, pseud, 0, isOn);
+    fakeUser = new User(userId, 0, pseud, 0, isOn);
 }
 
 QTcpSocket* ClientSocket::socket() {

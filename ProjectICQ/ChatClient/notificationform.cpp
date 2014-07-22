@@ -1,7 +1,7 @@
 #include "notificationform.h"
 #include <QDebug>
 NotificationForm::NotificationForm(quint16 id, const QString& pse, QWidget *parent) :
-    userId(id), pseud(pse), QDialog(parent)
+    QDialog(parent), userId(id), pseud(pse)
 {
     setAttribute(Qt::WA_DeleteOnClose);
     setWindowTitle("Notification");
@@ -26,16 +26,16 @@ NotificationForm::NotificationForm(quint16 id, const QString& pse, QWidget *pare
 }
 
 void NotificationForm::slotYes() {
-    emit yes(User(userId, 0, pseud, 0, 0));
+    emit yes(new User(userId, 0, pseud, 0, 0));
     close();
 }
 
 void NotificationForm::slotWrite() {
-    emit write(User(userId, 0, pseud, 0, 0));
+    emit write(new User(userId, 0, pseud, 0, 0));
     close();
 }
 
 void NotificationForm::slotNo() {
-    emit no(User(userId, 0, pseud, 0, 0));
+    emit no(new User(userId, 0, pseud, 0, 0));
     close();
 }

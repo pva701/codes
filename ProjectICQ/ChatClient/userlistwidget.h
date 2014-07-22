@@ -11,7 +11,7 @@ public:
     explicit UserListWidget(QWidget *parent = 0);
     explicit UserListWidget(const QVector <User*>& listOfFriends);
     void add(User* us);
-    void add(const QVector <User>& listOfFriends);
+    void add(const QVector <User*>& listOfFriends);
     void remove(User* us);
     void sort();
     User* userByDialog(int dialog);

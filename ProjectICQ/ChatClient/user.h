@@ -19,9 +19,9 @@ public:
     enum UserStatus {Not_Friend, Is_Friend};
     User();
     User(int id, int numDialog, QString pseudonymm, bool isF, bool isO);
-    int id();
-    bool isFriend();
-    bool isOnline();
+    int id() const;
+    bool isFriend() const;
+    bool isOnline() const;
     void setOnline(bool stat);
     void setFriend(bool status);
     bool operator < (const User& other) const;

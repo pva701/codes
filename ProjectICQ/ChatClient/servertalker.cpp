@@ -9,7 +9,7 @@ void ServerTalker::sendToServer(const QByteArray& bytearray) {//send to the serv
 }
 
 void ServerTalker::sendMessage(quint16 dialog, quint16 myId, QDateTime sendTime, const QString& message) {
-    qDebug() << "send message " << dialog << myId << sendTime.toString() << message;
+    //qDebug() << "send message " << dialog << myId << sendTime.toString() << message;
     QByteArray outArray;
     BytesReaderWriter out(&outArray, QIODevice::WriteOnly);
     out.setVersion(QDataStream::Qt_4_5);

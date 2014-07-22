@@ -69,6 +69,6 @@ void DialogFindFriends::closeEvent(QCloseEvent *) {
     inftext->clear();
 }
 
-void DialogFindFriends::setFocusUser(User us) {
+void DialogFindFriends::setFocusUser(User* us) {
     focusUser = us;
 }

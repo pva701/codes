@@ -27,11 +27,11 @@ SOURCES += \
     userlistwidget.cpp \
     notificationform.cpp \
     notification.cpp \
-    texteditmessage.cpp
+    texteditmessage.cpp \
+    smilebutton.cpp
 
 HEADERS  += \
     user.h \
-    dialog.h \
     chatclient.h \
     authenticationform.h \
     ../common/bytesreaderwriter.h \
@@ -47,5 +47,7 @@ HEADERS  += \
     userlistwidget.h \
     notificationform.h \
     notification.h \
-    texteditmessage.h
+    texteditmessage.h \
+    dialog.h \
+    smilebutton.h
 

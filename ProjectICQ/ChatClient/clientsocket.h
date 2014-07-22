@@ -21,9 +21,9 @@ private:
     static const int INTERVAL_LOAD_NOTIFYS = 5000;
     static const int INTERVAL_LOAD_DATETIME = 5000;
 
-    User fakeUser;
+    User* fakeUser;
     QVector <Message> fakeHistory;
-    QVector <User> fakeUserlist;
+    QVector <User*> fakeUserlist;
     quint16 fakeUserId;
     quint16 fakeStatus;
     QString fakePseud;
@@ -43,13 +43,13 @@ public:
 
     void authenticate(const QString& log, const QString& pass, quint16& status, quint16& userId,
                       QString& pseud, QString& msg);
-    QVector <User> loadUserlist(quint16 myId);
-    User addUserById(quint16 mid, quint16 fid, int status);
-    User addUserByLogin(quint16 myId, const QString& log, int status);
-    User addUserByDialog(quint16 myId, quint16 dial, int status);
+    QVector <User*> loadUserlist(quint16 myId);
+    User* addUserById(quint16 mid, quint16 fid, int status);
+    User* addUserByLogin(quint16 myId, const QString& log, int status);
+    User* addUserByDialog(quint16 myId, quint16 dial, int status);
     QVector <Message> loadHistory(Dialog *dg);
     quint16 registerUser(const QString& log, const QString& pseud, const QString& pass);
-    User findUser(const QString& log);
+    User* findUser(const QString& log);
     QVector <Notification> loadNotifys(int userId);
     void initDateTime();
     QDateTime currentDateTimeFromServer();
@@ -60,7 +60,7 @@ public:
 
     ~ClientSocket();
 private slots:
-    void slotUserlistRecieved(const QVector <User>& us);
+    void slotUserlistRecieved(const QVector <User*>& us);
     void slotUserAdded(quint16 mid, quint16 did, const QString& pseud, int status, bool isOn);
     void slotHistoryRecieved(const QVector<Message> &hs);
     void slotTryRegistered(quint16 userId);

@@ -17,9 +17,9 @@ UserListWidget::UserListWidget(const QVector <User*>& listOfFriends) {
 }
 
 
-void UserListWidget::add(const QVector <User>& listOfFriends) {
+void UserListWidget::add(const QVector <User*>& listOfFriends) {
     for (int i = 0; i < listOfFriends.size(); ++i)
-        frnds.push_back(new User(listOfFriends[i]));
+        frnds.push_back(listOfFriends[i]);
     qSort(frnds.begin(), frnds.end(), cmpr);
 
     for (int i = 0; i < frnds.size(); ++i)

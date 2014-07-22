@@ -19,11 +19,11 @@ User::User(int id, int numDialogg, QString pseudonymm, bool isF, bool isO):
         setForeground(OFFLINE_COLOR);
 }
 
-int User::id() {
+int User::id() const {
     return userId;
 }
 
-bool User::isFriend() {
+bool User::isFriend() const {
     return isFr;
 }
 
@@ -34,7 +34,7 @@ void User::setFriend(bool status) {
     setOnline(isOn);
 }
 
-bool User::isOnline() {
+bool User::isOnline() const {
     return isOn;
 }
 

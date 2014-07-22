@@ -33,7 +33,7 @@ void ServerListener::slotReadServer() {//read from the server
             emit tryAuthenticate(status, userId, pseud, msg);
        } else if (typeOfCommand == ServerCommands::LOAD_USERLIST) {//stoped
             quint16 numberOfFriends;
-            QVector <User> us;
+            QVector <User*> us;
             in >> numberOfFriends;
             qDebug() << "load userlist in listener " << numberOfFriends;
             for (int i = 0; i < numberOfFriends; ++i) {
@@ -41,7 +41,7 @@ void ServerListener::slotReadServer() {//read from the server
                 QString pseud;
                 bool isfr, stat;
                 in >> uid >> did >> pseud >> isfr >> stat;
-                us.push_back(User(uid, did, pseud, isfr, stat));
+                us.push_back(new User(uid, did, pseud, isfr, stat));
             }
             emit userlistRecieved(us);
         } else if (typeOfCommand == ServerCommands::LOAD_HISTORY) {//stoped

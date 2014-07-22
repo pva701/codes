@@ -17,9 +17,9 @@ public:
     explicit NotificationForm(quint16 id, const QString& pseud, QWidget *parent = 0);
     
 signals:
-    void yes(User us);
-    void write(User us);
-    void no(User us);
+    void yes(User* us);
+    void write(User* us);
+    void no(User* us);
 private slots:
     void slotYes();
     void slotWrite();
