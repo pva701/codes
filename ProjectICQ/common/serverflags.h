@@ -4,7 +4,7 @@
 namespace ServerFlags {
     enum ConnectionStatus {Success_Auth, CE_Database, AE_Wrong_Login, AE_Wrong_Password, Time_Out};
     enum StatusType {UserOffline, UserOnline};
-    enum NotificationType {RequestAddToFriends, UnreadMessages};
+    enum NotificationType {RequestAddToFriends, UnreadMessages, SendMessages};
     enum UserType {InUserlist, Friend, Discard};
 }
 #endif 

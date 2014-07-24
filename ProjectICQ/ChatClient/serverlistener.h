@@ -36,6 +36,7 @@ signals:
     void notifyOnOff(quint16 userId, bool stat);
     void notifysReceived(const QVector<Notification>& nf);
     void dateTimeFromServer(QDateTime);
+    void readAllYouMessageNotify(int dialogId);
 };
 
 #endif // SERVERLISTENER_H

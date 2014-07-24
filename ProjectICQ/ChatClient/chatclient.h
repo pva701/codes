@@ -72,6 +72,7 @@ private slots:
     void slotWriteToFriend(User*);
     void slotNotifyOnOff(quint16, bool flag);
     void slotReadMessageNotify();
+    void slotReadAllYouMessageNotify(int);
     //void appendHistory(Dialog* dg, const QString& name, const QDateTime& sendTime, QTextDocument *document);
     //void slotOverrideKeyPress(QKeyEvent *e);
 };

@@ -56,7 +56,8 @@ private:
     QByteArray notify(quint16 userId, ServerFlags::StatusType flag);
     QByteArray loadNotifys(int userId);
     QByteArray currentDateTime();
-    void readMessageNotify(int usId, int dialog);
+    int readMsgNotifyFromReader(int usId, int dialog);
+    void readMsgNotifyToSender(int from, int dialog);
 private slots:
     void slotConnectionClient();
     void slotDisconnectedClient();

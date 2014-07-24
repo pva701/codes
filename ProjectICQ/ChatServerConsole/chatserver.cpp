@@ -175,9 +175,18 @@ QByteArray ChatServer::registerUser(const QString& userLogin, const QString &pse
     BytesReaderWriter out(&outArray, QIODevice::WriteOnly);
     out.setVersion(QDataStream::Qt_4_5);
     out << quint16(ServerCommands::REGISTER_USER);
+
+    bool opened = true;
+    if (!clientinfodb.isOpen())
+        if (!clientinfodb.open()) {
+            opened = false;
+            out << quint16(ServerFlags::CE_Database) << "Unable to connected to a database: \n" +
+                   clientinfodb.lastError().driverText() + "\n" +
+                   clientinfodb.lastError().databaseText();
+        }
+
     QSqlQuery query(QSqlDatabase::database(NAME_OF_CONNECTION_TO_DATABASE));
     query.exec(QString("SELECT * FROM users WHERE user_login ='%1';").arg(userLogin));
-    qDebug() << query.size();
     if (query.size() == 1) {
         out << quint16(0);
         out.confirm();
@@ -189,7 +198,6 @@ QByteArray ChatServer::registerUser(const QString& userLogin, const QString &pse
     query.exec(QString("SELECT id FROM users WHERE user_login = '%1';").arg(userLogin));
     query.next();
     quint16 numberOfUser = query.value(0).toInt();
-    qDebug() << numberOfUser;
 
     query.exec(QString("CREATE TABLE userlist_user%1 ("
                "`friend_id` integer not null primary key,"
@@ -245,11 +253,14 @@ QByteArray ChatServer::loadNotifys(int userId) {
     qDebug() << int(query.size());
     while (query.next()) {
         int type = query.value(0).toInt();
+        qDebug() << "TYPE OF SQL = " << type;
         if (type == ServerFlags::RequestAddToFriends) {
             int id = query.value(1).toInt();
             QString pseud = userDescribe(id).second;
             out << type << id << pseud;
         } else if (type == ServerFlags::UnreadMessages)
+            out << type << query.value(1).toInt() << query.value(2).toInt();
+        else if (type == ServerFlags::SendMessages)
             out << type << query.value(1).toInt() << query.value(2).toInt();
     }
 
@@ -287,20 +298,29 @@ void ChatServer::sendMessage(quint16 dialog, quint16 fromId, QDateTime sendTime,
 
     QVector <quint16> membs = membersOfDialog(dialog);
     QSqlQuery query(QSqlDatabase::database(NAME_OF_CONNECTION_TO_DATABASE));
-    for (int i = 0; i < membs.size(); ++i) {
-        if (membs[i] == fromId)
-            continue;
-        query.exec(QString("SELECT * FROM notify_user%1 WHERE field1 = %2;").arg(membs[i]).arg(dialog));
-        if (query.size() == 1)
-            query.exec(QString("UPDATE notify_user%1 SET field2=field2+1 WHERE field1=%2;").arg(membs[i]).arg(dialog));
-        else
-            query.exec(QString("INSERT INTO notify_user%1 (type, field1, field2) VALUE(%2, %3, %4);").arg(membs[i]).arg(ServerFlags::UnreadMessages).arg(dialog).arg(1));
-    }
+    for (int i = 0; i < membs.size(); ++i)
+        if (membs[i] == fromId) {
+            query.exec(QString("SELECT * FROM notify_user%1 WHERE type = %2 and field1 = %3;").arg(membs[i]).arg(ServerFlags::SendMessages).arg(dialog));
+            qDebug() << "SIZE = " << query.size();
+            if (query.size() == 1)
+                query.exec(QString("UPDATE notify_user%1 SET field2=field2 + 1 WHERE type = %2 and field1 = %3;").arg(membs[i]).arg(ServerFlags::SendMessages).arg(dialog));
+            else {
+                query.exec(QString("INSERT INTO notify_user%1 (type, field1, field2) VALUE(%2, %3, %4);").arg(membs[i]).arg(ServerFlags::SendMessages).arg(dialog).arg(1));
+                qDebug() << "ID = " << membs[i];
+            }
+        } else {
+            query.exec(QString("SELECT * FROM notify_user%1 WHERE type = %2 and field1 = %3;").arg(membs[i]).arg(ServerFlags::UnreadMessages).arg(dialog));
+            if (query.size() == 1)
+                query.exec(QString("UPDATE notify_user%1 SET field2=field2+1 WHERE type = %2 and field1=%3;").arg(membs[i]).arg(ServerFlags::UnreadMessages).arg(dialog));
+            else
+                query.exec(QString("INSERT INTO notify_user%1 (type, field1, field2) VALUE(%2, %3, %4);").arg(membs[i]).arg(ServerFlags::UnreadMessages).arg(dialog).arg(1));
+        }
 }
 
 QByteArray ChatServer::addUser(quint16 myId, std::pair <quint16, QString> fr, int status, int typeAdd) {//TODO
     QSqlQuery query(QSqlDatabase::database(NAME_OF_CONNECTION_TO_DATABASE));
-    query.exec(QString("DELETE FROM notify_user%1 WHERE field1=%2;").arg(myId).arg(fr.first));
+    query.exec(QString("DELETE FROM notify_user%1 WHERE type = %2 and field1=%3;").arg(myId).
+               arg(ServerFlags::RequestAddToFriends).arg(fr.first));
     quint16 dialogId;
     if (status == ServerFlags::Discard)
         dialogId = 0;
@@ -353,10 +373,33 @@ void ChatServer::changeStatus(quint16 myId, quint16 frId, int status) {
                arg(myId).arg(status).arg(frId));
 }
 
-void ChatServer::readMessageNotify(int myId, int dialog) {
+int ChatServer::readMsgNotifyFromReader(int myId, int dialog) {
     QSqlQuery query(QSqlDatabase::database(NAME_OF_CONNECTION_TO_DATABASE));
     query.exec(QString("DELETE FROM notify_user%1 WHERE field1=%2;").
                arg(myId).arg(dialog));
+    query.exec(QString("SELECT MAX(id) FROM history_dialog%1;").arg(dialog));
+    query.next();
+    int id = query.value(0).toInt();
+    query.exec(QString("SELECT from_id FROM history_dialog%1 WHERE id=%2;").arg(dialog).arg(id));
+    query.next();
+    return query.value(0).toInt();
+}
+
+void ChatServer::readMsgNotifyToSender(int from, int dialog) {
+    QSqlQuery query(QSqlDatabase::database(NAME_OF_CONNECTION_TO_DATABASE));
+    qDebug() << "IN READ MSG NOTIF TO SENDER";
+    query.exec(QString("DELETE FROM notify_user%1 WHERE type = %2 and field1=%3;").
+               arg(from).arg(ServerFlags::SendMessages).arg(dialog));
+    if (online.isOnline(from)) {
+        qDebug() << "Is ONLINE!";
+        QByteArray outArray;
+        BytesReaderWriter out(&outArray, QIODevice::WriteOnly);
+        out.setVersion(QDataStream::Qt_4_5);
+        out << quint16(ServerCommands::READ_MESSAGE_NOTIFY);
+        out << dialog;
+        out.confirm();
+        sendToClient(online.socket(from), outArray);
+    }
 }
 
 void ChatServer::youAddedInUserlist(std::pair <quint16, QString> me, quint16 frId) {//TODO
@@ -364,7 +407,7 @@ void ChatServer::youAddedInUserlist(std::pair <quint16, QString> me, quint16 frI
     query.exec(QString("SELECT * FROM userlist_user%1 WHERE friend_id=%2;").arg(frId).arg(me.first));
     int sz = query.size();
     query.next();
-    if (sz == 1 && query.value(2).toBool())//if in friendlist
+    if (sz == 1 && query.value(2).toBool())//if already in friendlist
         return;
 
     query.exec(QString("INSERT INTO notify_user%1 (type, field1) VALUE(%2, %3);").arg(frId).arg(ServerFlags::RequestAddToFriends).arg(me.first));
@@ -535,12 +578,10 @@ void ChatServer::slotReadClient() {
             QString userLogin, pseud, pass;
             in >> userLogin >> pseud >> pass;
             sendToClient(pClientSocket, registerUser(userLogin, pseud, pass, pClientSocket));
-            //return;
         } else if (typeOfCommand == ServerCommands::FIND_USER) {
             QString log;
             in >> log;
             sendToClient(pClientSocket, findUser(log));
-            //return;
         } else if (typeOfCommand == ServerCommands::LOAD_NOTIFYS) {
             int id;
             in >> id;
@@ -548,7 +589,8 @@ void ChatServer::slotReadClient() {
         } else if (typeOfCommand == ServerCommands::READ_MESSAGE_NOTIFY) {
             int usId, dialog;
             in >> usId >> dialog;
-            readMessageNotify(usId, dialog);
+            int from = readMsgNotifyFromReader(usId, dialog);
+            readMsgNotifyToSender(from, dialog);
         } else if (typeOfCommand == ServerCommands::TIME_SERVER)
             sendToClient(pClientSocket, currentDateTime());
     }

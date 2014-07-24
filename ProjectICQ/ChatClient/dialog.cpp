@@ -301,17 +301,34 @@ void Dialog::appendToHistory(const QString& name, const QDateTime& sendTime, QTe
 
     if (mode == ReceivedMessage && !dgReadByUser) {
         setUnreadMessage(unreadMessage + 1);
-        queUnread.push_back(te);
+        queUnreadWrote.push_back(te);
         te->setStyleSheet("QTextEdit { background-color: #FFFCCC; }");
     } else if (mode == LoadHistory) {
-        queUnread.push_back(te);
-        te->setStyleSheet("QTextEdit { background-color: #FFFCCC; }");
-        if (queUnread.size() > unreadMessage) {
-            queUnread.front()->setStyleSheet("QTextEdit { background-color: #FFFFFF; }");
-            queUnread.pop_front();
+
+        if (unreadMessage != 0) {
+            queUnreadWrote.push_back(te);
+            te->setStyleSheet("QTextEdit { background-color: #FFFCCC; }");
+            if (queUnreadWrote.size() > unreadMessage) {
+                queUnreadWrote.front()->setStyleSheet("QTextEdit { background-color: #FFFFFF; }");
+                queUnreadWrote.pop_front();
+            }
         }
-    } else if (mode == SendMessage)
+
+        if (wroteMessage != 0) {
+            queUnreadWrote.push_back(te);
+            te->setStyleSheet("QTextEdit { background-color: #DFFFCC; }");
+            if (queUnreadWrote.size() > wroteMessage) {
+                queUnreadWrote.front()->setStyleSheet("QTextEdit { background-color: #FFFFFF; }");
+                queUnreadWrote.pop_front();
+            }
+        }
+
+    } else if (mode == SendMessage) {
         teMessage->setFocus();
+        te->setStyleSheet("QTextEdit { background-color: #DFFFCC; }");
+        wroteMessage++;
+        queUnreadWrote.push_back(te);
+    }
 }
 
 bool Dialog::dialogReadByUser() {
@@ -321,18 +338,27 @@ bool Dialog::dialogReadByUser() {
 void Dialog::slotFinishReadMessage() {
     int un = unreadMessage;
     for (int i = 0; i < un; ++i) {
-        queUnread.front()->setStyleSheet("QTextEdit { background-color: #FFFFFF; }");
-        queUnread.pop_front();
+        queUnreadWrote.front()->setStyleSheet("QTextEdit { background-color: #FFFFFF; }");
+        queUnreadWrote.pop_front();
     }
     dgReadByUser = true;
     setUnreadMessage(0);
-    emit readMessages();
+    if (un > 0)
+        emit readMessages();
     tmrNotActive.start(INTERVAL_NOT_ACTIVE);
 }
 
 void Dialog::slotNotActiveBehav() {
-    qDebug() << "not active";
     dgReadByUser = false;
     tmrNotActive.stop();
     teMessage->clearFocus();
+}
+
+void Dialog::setWroteMessage(int x) {
+    if (x == 0)
+        for (int i = 0; i < wroteMessage; ++i) {
+            queUnreadWrote.front()->setStyleSheet("QTextEdit { background-color: #FFFFFF; }");
+            queUnreadWrote.pop_front();
+        }
+    wroteMessage = x;
 }

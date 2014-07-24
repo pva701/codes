@@ -65,6 +65,7 @@ ChatClient::ChatClient(ClientSocket *sockett, const QString& strHost, int nPort,
     connect(pSocket->listener(), SIGNAL(youAddedInUserlist(quint16, QString)), this, SLOT(slotYouAreAddedInUserlist(quint16, QString)), Qt::QueuedConnection);
     connect(pSocket->listener(), SIGNAL(notifyOnOff(quint16,bool)), this, SLOT(slotNotifyOnOff(quint16, bool)));
     connect(pSocket->socket(), SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(slotError(QAbstractSocket::SocketError)));
+    connect(pSocket->listener(), SIGNAL(readAllYouMessageNotify(int)), SLOT(slotReadAllYouMessageNotify(int)));
 
     pSocket->initDateTime();
     showNotifications();
@@ -82,6 +83,14 @@ void ChatClient::showNotifications() {
                 connect(us, SIGNAL(readMessages()), this, SLOT(slotReadMessageNotify()));
             }
             us->setUnreadMessage(notifs[i]->field[2].toInt());
+        } else if (notifs[i]->type() == ServerFlags::SendMessages) {
+            User *us = userlist->userByDialog(notifs[i]->field[1].toInt());
+            if (us == NULL) {
+                us = pSocket->addUserByDialog(myId, notifs[i]->field[1].toInt(), ServerFlags::InUserlist);
+                userlist->add(us);
+                connect(us, SIGNAL(readMessages()), this, SLOT(slotReadMessageNotify()));
+            }
+            us->setWroteMessage(notifs[i]->field[2].toInt());
         }
 }
 
@@ -256,6 +265,11 @@ void ChatClient::slotPrepareSendMessage() {
     pSocket->talker()->sendMessage(activeDialog->dialog(), myId, sendTime, txt);
     activeDialog->message()->setText("");
     activeDialog->reloadResource(activeDialog->message());
+}
+
+void ChatClient::slotReadAllYouMessageNotify(int dialog) {
+    User *us = userlist->userByDialog(dialog);
+    us->setWroteMessage(0);
 }
 
 ChatClient::~ChatClient() {

@@ -88,7 +88,6 @@ void ServerListener::slotReadServer() {//read from the server
         } else if (typeOfCommand == ServerCommands::REGISTER_USER) {//stoped
             quint16 userId;
             in >> userId;
-            qDebug() << "userId in listener = " << userId;
             emit tryRegister(userId);
         } else if (typeOfCommand == ServerCommands::FIND_USER) {
             quint16 userId;
@@ -114,7 +113,7 @@ void ServerListener::slotReadServer() {//read from the server
                     in >> id >> pseud;
                     res.back().field[1] = id;
                     res.back().field[2] = pseud;
-                } else if (type == ServerFlags::UnreadMessages) {
+                } else if (type == ServerFlags::UnreadMessages || type == ServerFlags::SendMessages) {
                     int dialId, cnt;
                     in >> dialId >> cnt;
                     res.back().field[1] = dialId;
@@ -126,6 +125,10 @@ void ServerListener::slotReadServer() {//read from the server
             QDateTime cur;
             in >> cur;
             emit dateTimeFromServer(cur);
+        } else if (typeOfCommand == ServerCommands::READ_MESSAGE_NOTIFY) {
+            int dialId;
+            in >> dialId;
+            emit readAllYouMessageNotify(dialId);
         }
     }
 }

@@ -25,13 +25,17 @@ private:
     QWidget *tabWidget;
     QMenu *smileMenu;
     int unreadMessage;
+    int wroteMessage;
     bool createdWidgetx;
     bool dgReadByUser;
     void processCalc(int& heig, int& mx, int& curLine, int curw, int curh);
     QTimer tmrNotActive;
-    QQueue <QTextEdit*> queUnread;
+    QQueue <QTextEdit*> queUnreadWrote;
 
     static const int INTERVAL_NOT_ACTIVE = 25000;
+    //static const QString UNREAD_MESSAGE = "";
+    //static const QString WROTE_MESSAGE = "";
+    //static const QString USUAL_MESSAGE = "";
 public:
     Dialog(QWidget *parent = 0);
     Dialog(quint16 numDialogg, QString namee, QWidget *parent = 0);
@@ -46,7 +50,7 @@ public:
     int unread();
     void reloadResource(QTextEdit *doc);
     bool dialogReadByUser();
-
+    void setWroteMessage(int x);
     enum InsertingMode {LoadHistory, ReceivedMessage, SendMessage};
 
     int W_CNT;
