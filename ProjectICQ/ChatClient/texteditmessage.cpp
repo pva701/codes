@@ -15,4 +15,16 @@ void TextEditMessage::keyPressEvent(QKeyEvent *e) {
         emit enter();
     else
         QTextEdit::keyPressEvent(e);
+    emit gotFocus();
+}
+
+
+void TextEditMessage::focusInEvent(QFocusEvent *e) {
+    QTextEdit::focusInEvent(e);
+    emit gotFocus();
+}
+
+void TextEditMessage::focusOutEvent(QFocusEvent *e) {
+    QTextEdit::focusOutEvent(e);
+    emit lostFocus();
 }

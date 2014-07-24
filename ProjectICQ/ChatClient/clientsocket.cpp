@@ -62,7 +62,7 @@ QVector<User*> ClientSocket::loadUserlist(quint16 myId) {
     out << quint16(myId);
     out.confirm();
     //qRegisteredMetaType
-    connect(listenerx, SIGNAL(userlistRecieved(QVector<User*>)), this, SLOT(slotUserlistRecieved(QVector<User*>)));
+    connect(listenerx, SIGNAL(userlistReceived(QVector<User*>)), this, SLOT(slotUserlistReceived(QVector<User*>)));
     talkerx->sendToServer(outArray);
     //new thread
     listenerx->waitFullStream(INTERVAL_LOAD_USERLIST);
@@ -70,7 +70,7 @@ QVector<User*> ClientSocket::loadUserlist(quint16 myId) {
     return fakeUserlist;
 }
 
-void ClientSocket::slotUserlistRecieved(const QVector <User*>& us) {
+void ClientSocket::slotUserlistReceived(const QVector <User*>& us) {
     fakeUserlist = us;
 }
 
@@ -82,14 +82,14 @@ QVector <Notification> ClientSocket::loadNotifys(int myId) {
     out << myId;
     out.confirm();
     //qRegisteredMetaType
-    connect(listenerx, SIGNAL(notifysRecieved(QVector<Notification>)), this, SLOT(sloNotifysRecieved(QVector<Notification>)));
+    connect(listenerx, SIGNAL(notifysReceived(QVector<Notification>)), this, SLOT(sloNotifysReceived(QVector<Notification>)));
     talkerx->sendToServer(outArray);
     //new thread
     listenerx->waitFullStream(INTERVAL_LOAD_NOTIFYS);
     return fakeNotifys;
 }
 
-void ClientSocket::sloNotifysRecieved(const QVector<Notification>& notf) {
+void ClientSocket::sloNotifysReceived(const QVector<Notification>& notf) {
     fakeNotifys = notf;
 }
 
@@ -147,14 +147,14 @@ QVector <Message> ClientSocket::loadHistory(Dialog *dg) {
     out << quint16(ServerCommands::LOAD_HISTORY);
     out << quint16(dg->dialog());
     out.confirm();
-    connect(listenerx, SIGNAL(historyRecieved(QVector<Message>)), this, SLOT(slotHistoryRecieved(QVector<Message>)));
+    connect(listenerx, SIGNAL(historyReceived(QVector<Message>)), this, SLOT(slotHistoryReceived(QVector<Message>)));
     talkerx->sendToServer(outArray);
     //new thread
     listenerx->waitFullStream(INTERVAL_LOAD_HISTORY);
     return fakeHistory;
 }
 
-void ClientSocket::slotHistoryRecieved(const QVector<Message>& hs) {
+void ClientSocket::slotHistoryReceived(const QVector<Message>& hs) {
     fakeHistory = hs;
 }
 

@@ -2,7 +2,7 @@
 
 #include "notification.h"
 
-ServerListener::ServerListener(QTcpSocket *socket):sizeOfBlock(0), fullStreamRecieved(false) {
+ServerListener::ServerListener(QTcpSocket *socket):sizeOfBlock(0), fullStreamReceived(false) {
     pSocket = socket;
     connect(socket, SIGNAL(readyRead()), this, SLOT(slotReadServer()));
 }
@@ -21,7 +21,7 @@ void ServerListener::slotReadServer() {//read from the server
         if (pSocket->bytesAvailable() < sizeOfBlock)
             break;
         sizeOfBlock = 0;
-        fullStreamRecieved = true;
+        fullStreamReceived = true;
         quint16 typeOfCommand;
         in >> typeOfCommand;
         qDebug() << "typeOfCommand = " << typeOfCommand;
@@ -43,7 +43,7 @@ void ServerListener::slotReadServer() {//read from the server
                 in >> uid >> did >> pseud >> isfr >> stat;
                 us.push_back(new User(uid, did, pseud, isfr, stat));
             }
-            emit userlistRecieved(us);
+            emit userlistReceived(us);
         } else if (typeOfCommand == ServerCommands::LOAD_HISTORY) {//stoped
             quint16 numberOfMessages, numbersOfUserIdDialog;
             in >> numbersOfUserIdDialog;
@@ -64,13 +64,13 @@ void ServerListener::slotReadServer() {//read from the server
                 in >> id >> fromId >> sendTime >> content;
                 history.push_back(Message(id, fromId, pseuds[fromId], sendTime, content));
             }
-            emit historyRecieved(history);
+            emit historyReceived(history);
         } else if (typeOfCommand == ServerCommands::SEND_MESSAGE) {//Qued
             quint16 dg, from;
             QDateTime sendTime;
             QString content;
             in >> dg >> from >> sendTime >> content;
-            emit messageRecieved(dg, from, sendTime, content);
+            emit messageReceived(dg, from, sendTime, content);
         } else if (typeOfCommand == ServerCommands::YOU_ADDED_IN_USERLIST) {//Qued
             quint16 userId;
             QString pseud;
@@ -121,7 +121,7 @@ void ServerListener::slotReadServer() {//read from the server
                     res.back().field[2] = cnt;
                 }
             }
-            emit notifysRecieved(res);
+            emit notifysReceived(res);
         } else if (typeOfCommand == ServerCommands::TIME_SERVER) {
             QDateTime cur;
             in >> cur;
@@ -133,12 +133,12 @@ void ServerListener::slotReadServer() {//read from the server
 
 bool ServerListener::waitFullStream(int mills) {
     qDebug() << "wait full stream";
-    fullStreamRecieved = false;
-    while (pSocket->waitForReadyRead(mills) && !fullStreamRecieved) {
+    fullStreamReceived = false;
+    while (pSocket->waitForReadyRead(mills) && !fullStreamReceived) {
         qDebug() << "innnnn wait";
     }
-    bool ret = fullStreamRecieved;
-    fullStreamRecieved = false;
+    bool ret = fullStreamReceived;
+    fullStreamReceived = false;
     qDebug() << "exit from wait full stream\n";
     return ret;
 }

@@ -60,14 +60,14 @@ public:
 
     ~ClientSocket();
 private slots:
-    void slotUserlistRecieved(const QVector <User*>& us);
+    void slotUserlistReceived(const QVector <User*>& us);
     void slotUserAdded(quint16 mid, quint16 did, const QString& pseud, int status, bool isOn);
-    void slotHistoryRecieved(const QVector<Message> &hs);
+    void slotHistoryReceived(const QVector<Message> &hs);
     void slotTryRegistered(quint16 userId);
     void slotAuthentificated(quint16 status, quint16 userId,
                              const QString& pseud, const QString& msg);
     void slotFoundUser(quint16 userId, const QString& pseud, bool isOn);
-    void sloNotifysRecieved(const QVector<Notification>& nf);
+    void sloNotifysReceived(const QVector<Notification>& nf);
     void slotDateTimeFromServer(QDateTime);
 };
 

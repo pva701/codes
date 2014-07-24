@@ -50,19 +50,18 @@ public:
     ChatClient(ClientSocket *socket, const QString& strHost, int nPort, int idUserx, const QString& pseud, QWidget *pwig = 0);
     ~ChatClient();
 private:
-    void createDialog(Dialog *dg);
+    void createDialog(Dialog *dg, bool loadLast = true);
     void activateTab(Dialog *dg);
     void showNotifications();
-    QTextDocument* prepareRecievedMessage(const QString& msg);
-    int metainfoSmile(const QString& s, int pos);
+    //QTextDocument* prepareRecievedMessage(const QString& msg);
+    //int metainfoSmile(const QString& s, int pos);
     //static QTextDocument *toTextDocumentFromString
     //QString toStringFromTextDocument
 private slots:
     void slotError(QAbstractSocket::SocketError);
     void slotPrepareSendMessage();
-    void slotMessageRecieved(quint16 dialogNum, quint16 fromId, QDateTime sendTime, const QString& message);
+    void slotMessageReceived(quint16 dialogNum, quint16 fromId, QDateTime sendTime, const QString& message);
     void slotYouAreAddedInUserlist(quint16 frId, const QString& pseud);
-
     void slotDoubleClickDialog(Dialog*);
     void slotTabClosed(int);
     void slotCurrentTabChanged(int);
@@ -72,7 +71,8 @@ private slots:
     void slotNoAddFriend(User* us);
     void slotWriteToFriend(User*);
     void slotNotifyOnOff(quint16, bool flag);
-    void appendHistory(Dialog* dg, const QString& name, const QDateTime& sendTime, QTextDocument *document);
+    void slotReadMessageNotify();
+    //void appendHistory(Dialog* dg, const QString& name, const QDateTime& sendTime, QTextDocument *document);
     //void slotOverrideKeyPress(QKeyEvent *e);
 };
 

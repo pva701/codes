@@ -7,10 +7,17 @@
 #include <QBitmap>
 #include "smilebutton.h"
 #include <QUrl>
+#include <QTextBlock>
+#include <QDateTime>
+#include <QTextDocumentFragment>
+#include <QMenu>
+#include <cmath>
+#include <QTimer>
 
 Dialog::Dialog(QWidget *parent): QSplitter(Qt::Vertical, parent), QListWidgetItem() {}
 
-Dialog::Dialog(quint16 numDialogg, QString namee, QWidget *parent):QSplitter(Qt::Vertical, parent), QListWidgetItem(namee), teHistory(NULL), teMessage(NULL),
+Dialog::Dialog(quint16 numDialogg, QString namee, QWidget *parent):QSplitter(Qt::Vertical, parent),
+    QListWidgetItem(namee), lwHistory(NULL), teMessage(NULL),
     numDialog(numDialogg), tittle(namee), tabWidget(NULL), unreadMessage(0), createdWidgetx(false) {
     QListWidgetItem::setFlags(Qt::ItemIsDragEnabled | Qt::ItemIsEnabled);
     QListWidgetItem::setFont(QFont(QFont().defaultFamily(), 15, QFont::Light, false));
@@ -26,9 +33,6 @@ QString Dialog::name() const {
     return tittle;
 }
 
-QTextEdit* Dialog::history() const {
-    return teHistory;
-}
 
 QTextEdit* Dialog::message() const {
     return teMessage;
@@ -45,13 +49,14 @@ bool Dialog::createdWidget() {
 
 void Dialog::createWidget() {
     createdWidgetx = true;
+    dgReadByUser = false;
 
     int w = smiles->size().width() / W_CNT;
     int h = smiles->size().height() / H_CNT;
-    teHistory = new QTextEdit();
+    lwHistory = new QListWidget();
     teMessage = new TextEditMessage();
-    teHistory->setReadOnly(true);
-    addWidget(teHistory);
+    //teHistory->setReadOnly(true);
+    addWidget(lwHistory);
     setStretchFactor(0, 2);
 
     panel = new QToolBar();
@@ -88,10 +93,15 @@ void Dialog::createWidget() {
             connect(but, SIGNAL(clicked()), this, SLOT(slotSmilesClicked()));
             lytSmiles->addWidget(but, i, j);
             //teMessage->document()->addResource(QTextDocument::ImageResource, QUrl(but->name()), smiles->copy(j * w, i * h, w, h));
-            teHistory->document()->addResource(QTextDocument::ImageResource, QUrl(but->name()), smiles->copy(j * w, i * h, w, h));
+            //teHistory->document()->addResource(QTextDocument::ImageResource, QUrl(but->name()), smiles->copy(j * w, i * h, w, h));
         }
-    reloadResource();
+    reloadResource(message());
     smileMenu->setFixedSize(lytSmiles->sizeHint());
+    lwHistory->scrollToBottom();
+
+    connect(&tmrNotActive, SIGNAL(timeout()), this, SLOT(slotNotActiveBehav()));
+    connect(teMessage, SIGNAL(gotFocus()), this, SLOT(slotFinishReadMessage()));
+    connect(teMessage, SIGNAL(lostFocus()), this, SLOT(slotNotActiveBehav()));
 }
 
 void Dialog::slotSmilesClicked() {
@@ -106,18 +116,6 @@ void Dialog::slotClickedSmileMenu() {
     QPoint ps = mapToGlobal(panel->pos());
     smileMenu->setGeometry(QRect(ps.x(), ps.y(), smileMenu->size().width(), smileMenu->size().height()));
     smileMenu->show();
-}
-
-void Dialog::reloadResource() {
-    int w = smiles->size().width() / W_CNT;
-    int h = smiles->size().height() / H_CNT;
-    for (int i = 0; i < W_CNT; ++i)
-        for (int j = 0; j < H_CNT; ++j) {
-            QImage icon = smiles->copy(j * w, i * h, w, h);
-            QString nm = "[smile:" + QString::number(W_CNT * i + j) + "]";
-            teMessage->document()->addResource(QTextDocument::ImageResource, QUrl(nm), icon);
-            //teHistory->document()->addResource(QTextDocument::ImageResource, QUrl(but->name()), smiles->copy(j * w, i * h, w, h));
-        }
 }
 
 void Dialog::setUnreadMessage(int x) {
@@ -145,8 +143,196 @@ int Dialog::unread() {
 }
 
 void Dialog::loadSmiles() {
-    const QString PATH = "/home/pva701/smiles.png";
+    const QString PATH = "./SMILES.png";
     smiles = new QImage(PATH);
     W_CNT = 7;
     H_CNT = 7;
+}
+
+QString Dialog::toStringFromDocument() {
+    QTextDocument *doc = message()->document();
+    QString txt;
+    for (QTextBlock bl = doc->begin(); bl != doc->end(); bl = bl.next())
+        if (bl.isValid()) {
+            for (QTextBlock::iterator it = bl.begin(); !it.atEnd(); ++it) {
+                QTextFragment fragm = it.fragment();
+                if (fragm.isValid() && fragm.charFormat().isImageFormat()) {
+                    QString imgName = fragm.charFormat().toImageFormat().name();
+                    txt += imgName;
+                } else if (fragm.isValid())
+                    txt += fragm.text();
+            }
+
+            if (bl != doc->begin())
+                txt += "\n";
+        }
+    int i = (int)txt.size() - 1;
+    while (i >= 0 && (txt[i] == ' ' || txt[i] == '\n')) --i;
+    txt.remove(i + 1, txt.size() - i - 1);
+    return txt;
+}
+
+int Dialog::metainfoSmile(const QString& s, int pos) {
+    const int SIZE_OF_METAWORDS = 1;
+    QString metaWords[SIZE_OF_METAWORDS] = {"smile"};
+    for (int i = 0; i < SIZE_OF_METAWORDS; ++i) {
+        int j = pos;
+        if (s[j] == '[') ++j;
+        if (j + metaWords[i].size() + 2 <= s.size()) {
+            QString sub = s.mid(j, metaWords[i].size());
+            if (sub == metaWords[i]) j += metaWords[i].size();
+            QString num;
+            if (s[j] != ':')
+                continue;
+            ++j;
+            while (j < s.size() && isdigit(s[j].toAscii()))
+                num += s[j++];
+            if (j < s.size() && s[j] == ']' && num.size())
+                return num.toInt();
+        }
+    }
+    return -1;
+}
+
+QTextDocument* Dialog::toDocumentFromString(const QString& msg) {
+    QTextDocument *res = new QTextDocument();
+    QTextCursor cursor(res);
+    QString cur;
+    for (int i = 0; i <= msg.size(); ++i)
+        if (i == msg.size() || msg[i] == '\n') {
+            for (int j = 0; j < cur.size(); ++j) {
+                int sm = metainfoSmile(cur, j);
+                if (sm != -1) {
+                    cursor.insertImage("[smile:" + QString::number(sm) + "]");
+                    while (cur[j] != ']') ++j;
+                } else
+                    cursor.insertText(QString(cur[j]));
+            }
+            cursor.insertBlock();
+            cur = "";
+        } else
+            cur += msg[i];
+    return res;
+}
+
+void Dialog::reloadResource(QTextEdit *ed) {
+    QTextDocument *doc = ed->document();
+    int w = smiles->size().width() / W_CNT;
+    int h = smiles->size().height() / H_CNT;
+    for (int i = 0; i < W_CNT; ++i)
+        for (int j = 0; j < H_CNT; ++j) {
+            QImage icon = smiles->copy(j * w, i * h, w, h);
+            QString nm = "[smile:" + QString::number(W_CNT * i + j) + "]";
+            doc->addResource(QTextDocument::ImageResource, QUrl(nm), icon);
+            //teHistory->document()->addResource(QTextDocument::ImageResource, QUrl(but->name()), smiles->copy(j * w, i * h, w, h));
+        }
+}
+
+void Dialog::processCalc(int& heig, int& mx, int& curLine, int curw, int curh) {
+    int wiTe = parentWidget()->width();
+    if (curLine + curw <= wiTe) {
+        mx = qMax(mx, curh);
+        curLine += curw;
+    } else {
+        heig += mx;
+        mx = curw;
+        curLine = curh;
+    }
+}
+
+void Dialog::appendToHistory(const QString& name, const QDateTime& sendTime, QTextDocument *document, InsertingMode mode) {
+    QListWidgetItem *item = new QListWidgetItem();
+    QTextEdit *te = new QTextEdit();
+    lwHistory->addItem(item);
+    te->setReadOnly(true);
+    reloadResource(te);
+    lwHistory->setItemWidget(item, te);
+    QString color;
+    if (name == "You")
+        color = "blue";
+    else
+        color = "red";
+
+    te->append(QString("<font color = \"%1\"> <b>" + name + "</b> (" + sendTime.toString("dd-MM-yyyy hh:mm:ss") + "):</font>").arg(color));
+    te->moveCursor(QTextCursor::End);
+    te->textCursor().insertBlock();
+    te->textCursor().insertFragment(QTextDocumentFragment(document));
+
+    int heig = 17, widthTe = parentWidget()->width();
+    int curLine = 0;
+    int mx = 0;
+
+    for (QTextBlock bl = te->document()->begin(); bl != te->document()->end(); bl = bl.next())
+        if (bl.isValid()) {
+            if (bl.begin().atEnd()) {
+                heig += 17 + mx;//&&&
+                curLine = mx = 0;
+                continue;
+            }
+
+            for (QTextBlock::iterator it = bl.begin(); !it.atEnd(); ++it) {
+                QTextFragment fragm = it.fragment();
+                int curw, curh;
+                if (fragm.isValid() && fragm.charFormat().isImageFormat()) {
+                    curw = smiles->width() / W_CNT;
+                    curh = smiles->height() / H_CNT;
+                    processCalc(heig, mx, curLine, curw, curh);
+                } else if (fragm.isValid()) {
+                    QString s = fragm.text();
+                    QFontMetrics me(fragm.charFormat().font());
+                    curh = me.lineSpacing();
+                    for (int j = 0; j < s.size(); ++j) {
+                        curw = me.width(s[j]);
+                        processCalc(heig, mx, curLine, curw, curh);
+                    }
+                }
+            }
+            heig += mx;
+            mx = curLine = 0;
+        }
+
+    te->setStyleSheet(QString("QFrame {"
+                 "border: 2px solid #f3f2f1;"
+                 "border-radius: 4px;"
+                  "padding: 2px;}"));
+    item->setSizeHint(QSize(0, heig + 18));
+    te->resize(QSize(widthTe, heig));
+    lwHistory->scrollToBottom();
+
+    if (mode == ReceivedMessage && !dgReadByUser) {
+        setUnreadMessage(unreadMessage + 1);
+        queUnread.push_back(te);
+        te->setStyleSheet("QTextEdit { background-color: #FFFCCC; }");
+    } else if (mode == LoadHistory) {
+        queUnread.push_back(te);
+        te->setStyleSheet("QTextEdit { background-color: #FFFCCC; }");
+        if (queUnread.size() > unreadMessage) {
+            queUnread.front()->setStyleSheet("QTextEdit { background-color: #FFFFFF; }");
+            queUnread.pop_front();
+        }
+    } else if (mode == SendMessage)
+        teMessage->setFocus();
+}
+
+bool Dialog::dialogReadByUser() {
+    return dgReadByUser;
+}
+
+void Dialog::slotFinishReadMessage() {
+    int un = unreadMessage;
+    for (int i = 0; i < un; ++i) {
+        queUnread.front()->setStyleSheet("QTextEdit { background-color: #FFFFFF; }");
+        queUnread.pop_front();
+    }
+    dgReadByUser = true;
+    setUnreadMessage(0);
+    emit readMessages();
+    tmrNotActive.start(INTERVAL_NOT_ACTIVE);
+}
+
+void Dialog::slotNotActiveBehav() {
+    qDebug() << "not active";
+    dgReadByUser = false;
+    tmrNotActive.stop();
+    teMessage->clearFocus();
 }
