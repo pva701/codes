@@ -3,7 +3,7 @@
 ChatServer::ChatServer(const QString& host, int port, QObject *widget /*= 0*/):QObject(widget),
     DRIVER_OF_DATABASE("QMYSQL"), NAME_OF_CONNECTION_TO_DATABASE("connection"),
     NAME_OF_DATABASE("clientinfodb"), LOGIN_TO_DATABASE("root"),
-    PASSWORD_TO_DATABASE("v19a70parina"), sizeOfBlock(0) {
+    PASSWORD_TO_DATABASE("********"), sizeOfBlock(0) {
     pTCPServer = new QTcpServer(this);
     if (!pTCPServer->listen(QHostAddress(host), port)) {
         printf("ServerError: Unable to start the server: %s\n", pTCPServer->errorString().toStdString().c_str());
